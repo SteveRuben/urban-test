@@ -1,0 +1,146 @@
+/**
+ * Import function triggers from their respective submodules:
+ *
+ * import {onCall} from "firebase-functions/v2/https";
+ * import {onDocumentWritten} from "firebase-functions/v2/firestore";
+ *
+ * See a full list of supported triggers at https://firebase.google.com/docs/functions
+ */
+
+import {HttpsOptions, onRequest} from "firebase-functions/v2/https";
+import * as logger from "firebase-functions/logger";
+// Start writing functions
+// https://firebase.google.com/docs/functions/typescript
+
+import express from 'express';
+import helmet from 'helmet';
+import { corsMiddleware } from './middleware/cors.middleware';
+import routes from './routes';
+import { ResponseUtil } from './utils/response.util';
+import { AppError } from "./utils/errors.util";
+require("dotenv").config(); // Load .env variables
+// Créer l'application Express
+const app = express();
+
+// Middleware de sécurité
+app.use(helmet());
+app.use(corsMiddleware);
+app.use(express.urlencoded({ extended: true }));
+// Parsing JSON
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+// Logging pour le développement
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    logger.info(`${req.method} ${req.path}`, {
+      method: req.method,
+      path: req.path,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+    next();
+  });
+}
+// Routes principales
+app.use('/api/v1', routes);
+// Route de test simple avec paramètre
+app.get('/api/v1/test/:id', (req, res) => {
+  res.json({
+    message: 'Test route with parameter',
+    id: req.params.id
+  });
+});
+
+// Middleware de gestion d'erreurs globales
+app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  logger.error('Erreur non gérée:', {
+    error: error.message,
+    stack: error.stack,
+    method: req.method,
+    path: req.path,
+    body: req.body,
+    timestamp: new Date().toISOString()
+  });
+
+  // Erreur personnalisée
+  if (error instanceof AppError) {
+    ResponseUtil.error(res, error.message, error.statusCode);
+    return;
+  }
+  
+  // Erreur de parsing JSON
+  if (error.type === 'entity.parse.failed') {
+    ResponseUtil.validationError(res, 'JSON invalide');
+    return;
+  }
+  
+  // Erreur de payload trop large
+  if (error.type === 'entity.too.large') {
+    ResponseUtil.validationError(res, 'Payload trop volumineux');
+    return;
+  }
+
+  // Erreurs Firebase spécifiques
+  if (error.code) {
+    switch (error.code) {
+      case 'auth/id-token-expired':
+        ResponseUtil.unauthorized(res, 'Token expiré');
+        return;
+      case 'auth/id-token-revoked':
+        ResponseUtil.unauthorized(res, 'Token révoqué');
+        return;
+      case 'auth/invalid-id-token':
+        ResponseUtil.unauthorized(res, 'Token invalide');
+        return;
+      case 'permission-denied':
+        ResponseUtil.forbidden(res, 'Accès refusé');
+        return;
+      case 'not-found':
+        ResponseUtil.notFound(res, 'Ressource non trouvée');
+        return;
+    }
+  }
+
+  // Erreur générique
+  ResponseUtil.serverError(res, 'Erreur interne du serveur');
+});
+// Route racine
+app.get('/', (req, res) => {
+  res.json({
+    message: 'API Générateur de Lettres de Motivation',
+    version: '1.0.0',
+    status: 'running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Middleware de gestion d'erreurs globales
+
+
+// Route 404
+app.use('*', (req, res) => {
+  ResponseUtil.notFound(res, `Route non trouvée: ${req.method} ${req.originalUrl}`);
+});
+
+// Exporter la fonction Firebase (correction du problème TypeScript)
+// Configuration des options HTTPS
+const runtimeOpts: HttpsOptions = {
+  timeoutSeconds: 300,
+  memory: "1GiB" as const,
+  region: "europe-west1",
+  concurrency: 10,
+  minInstances: process.env.NODE_ENV === "production" ? 1 : 0,
+  maxInstances: process.env.NODE_ENV === "production" ? 10 : 3,
+};
+export const api = onRequest(runtimeOpts, app);
+
+
+// Pour le développement local avec Firebase Emulator
+if (process.env.NODE_ENV !== 'production') {
+  console.log('🔥 Mode développement activé');
+  console.log('📍 API disponible sur: http://localhost:5001/[PROJECT_ID]/europe-west1/api');
+  console.log('❤️  Health check sur: http://localhost:5001/[PROJECT_ID]/europe-west1/api/api/v1/health');
+}
+
+// Export par défaut pour éviter les problèmes TypeScript
+export default app;

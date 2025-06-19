@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "motivationletter-ai",
+    "production": "motivationletter-ai"
+  },
+  "targets": {},
+  "etags": {}
+}

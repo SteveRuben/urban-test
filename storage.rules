@@ -1,0 +1,71 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isValidFileSize(maxSizeBytes) {
+      return request.resource.size <= maxSizeBytes;
+    }
+    
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidDocumentType() {
+      return request.resource.contentType in [
+        'application/pdf', 
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
+    }
+    
+    // User letters exports (PDF/DOCX)
+    match /letters/{userId}/{fileName} {
+      allow read, write: if isAuthenticated() && 
+        isOwner(userId) && 
+        isValidDocumentType() && 
+        isValidFileSize(10 * 1024 * 1024); // 10MB max
+    }
+    
+    // User profile avatars
+    match /avatars/{userId}/{fileName} {
+      allow read, write: if isAuthenticated() && 
+        isOwner(userId) && 
+        isValidImageType() && 
+        isValidFileSize(2 * 1024 * 1024); // 2MB max
+    }
+    
+    // Template images (admin only write, public read)
+    match /templates/{templateId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+        isValidImageType() && 
+        isValidFileSize(5 * 1024 * 1024); // 5MB max
+    }
+    
+    // Public assets (logos, images, etc.)
+    match /public/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // Temporary uploads (auto-delete after 24h)
+    match /temp/{userId}/{fileName} {
+      allow read, write: if isAuthenticated() && 
+        isOwner(userId) && 
+        isValidFileSize(10 * 1024 * 1024); // 10MB max
+    }
+  }
+}
