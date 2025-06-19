@@ -1,0 +1,44 @@
+{
+  "name": "coverletter-pro",
+  "version": "1.0.0",
+  "description": "AI-powered cover letter generator",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend/functions && npm run serve",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend/functions && npm run build",
+    "deploy": "npm run build && firebase deploy",
+    "deploy:hosting": "npm run build:frontend && firebase deploy --only hosting",
+    "deploy:functions": "npm run build:backend && firebase deploy --only functions",
+    "deploy:rules": "firebase deploy --only firestore:rules,storage:rules",
+    "test:local": "npm run build && firebase serve",
+    "test:functions": "cd backend/functions && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "emulators": "firebase emulators:start",
+    "emulators:ui": "firebase emulators:start --import=./emulator-data --export-on-exit",
+    "logs:functions": "firebase functions:log",
+    "logs:hosting": "firebase hosting:channel:list",
+    "setup": "npm install && cd frontend && npm install --force && cd ../backend/functions && npm install",
+    "clean": "rm -rf node_modules frontend/node_modules backend/functions/node_modules frontend/dist backend/functions/lib"
+  },
+  "keywords": [
+    "cover-letter",
+    "ai",
+    "firebase",
+    "react",
+    "typescript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "firebase-tools": "^14.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
