@@ -1369,11 +1369,11 @@ const TemplatesPage: React.FC = () => {
                 }}
                 className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 text-left group border border-gray-100 hover:border-blue-200 card-hover-premium"
               >
-                <div className="flex items-center mb-4">
+                <div className="flex flex-col items-center justify-center mb-1 ">
                   <div className={`bg-gradient-to-br ${type.gradient} p-4 rounded-xl mr-4 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
                     <TypeIcon className="text-white w-6 h-6" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 ">
                     <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-1">
                       {type.name}
                     </h3>
@@ -1396,7 +1396,7 @@ const TemplatesPage: React.FC = () => {
                 </p>
                 
                 {/* Preview des templates populaires de cette catégorie */}
-                <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center justify-around text-xs text-gray-500">
                   <span>Plus populaires:</span>
                   <div className="flex gap-1">
                     {typeTemplates

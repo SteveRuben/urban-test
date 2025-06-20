@@ -396,9 +396,9 @@ const DashboardPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <button
                 onClick={() => handleQuickAction('new_letter', '/dashboard/letters/new')}
-                className="group p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all duration-300 text-left card-hover-premium"
+                className="group p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all duration-300 text-left card-hover-premium flex flex-col items-center justify-center"
               >
-                <div className="bg-blue-600 text-white w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <div className="bg-blue-600  text-white w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <FaPlus />
                 </div>
                 <div className="font-semibold text-gray-800 mb-1">Nouvelle lettre</div>
@@ -407,7 +407,7 @@ const DashboardPage: React.FC = () => {
 
               <button
                 onClick={() => handleQuickAction('templates', '/dashboard/templates')}
-                className="group p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 text-left card-hover-premium"
+                className="group p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 text-left card-hover-premium flex flex-col items-center justify-center"
               >
                 <div className="bg-purple-600 text-white w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <FaFileAlt />
@@ -418,7 +418,7 @@ const DashboardPage: React.FC = () => {
 
               <button
                 onClick={() => handleQuickAction('letters', '/dashboard/letters')}
-                className="group p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-all duration-300 text-left card-hover-premium"
+                className="group p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-all duration-300 text-left card-hover-premium flex flex-col items-center justify-center"
               >
                 <div className="bg-green-600 text-white w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <FaRegFileAlt />
@@ -429,7 +429,7 @@ const DashboardPage: React.FC = () => {
 
               <button
                 onClick={() => handleQuickAction('upgrade', '/dashboard/subscription')}
-                className="group p-4 rounded-xl bg-gradient-to-br from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 transition-all duration-300 text-left card-hover-premium"
+                className="group p-4 rounded-xl bg-gradient-to-br from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 transition-all duration-300 text-left card-hover-premium flex flex-col items-center justify-center"
               >
                 <div className="bg-yellow-600 text-white w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <FaTrophy />

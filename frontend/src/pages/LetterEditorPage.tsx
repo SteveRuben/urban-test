@@ -59,7 +59,18 @@ const LetterEditorPage: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const safeFormData = {
+    ...formData,
+    title: String(formData.title || ''),
+    company: String(formData.company || ''),
+    jobTitle: String(formData.jobTitle || ''),
+    recipientName: String(formData.recipientName || ''),
+    recipientEmail: String(formData.recipientEmail || ''),
+    content: String(formData.content || '')
+  };
+
   // Champs pour la génération IA mis à jour
   const [aiSettings, setAiSettings] = useState({
     jobDescription: '',
@@ -92,11 +103,24 @@ const LetterEditorPage: React.FC = () => {
   // Chargement des données d'une lettre existante
   useEffect(() => {
     const fetchLetterData = async () => {
-      if (isNewLetter) return;
-
+      // Ne pas recharger si on est en train de naviguer ou si on génère du contenu
+      if (isNewLetter || isNavigating || isGenerating) return;
+  
       try {
         const response = await api.get(`/letters/${id}`);
         const letter = response.data;
+        
+        // Vérifier si les données locales sont différentes des données serveur
+        const serverContent = letter.content || '';
+        if (formData.content && formData.content !== serverContent && formData.content.length > 0) {
+          // Demander à l'utilisateur s'il veut garder ses modifications locales
+          const keepLocal = window.confirm(
+            'Vous avez des modifications non sauvegardées. Voulez-vous les conserver ?'
+          );
+          if (keepLocal) {
+            return; // Ne pas écraser les données locales
+          }
+        }
         
         setFormData({
           title: letter.title || '',
@@ -109,10 +133,10 @@ const LetterEditorPage: React.FC = () => {
         });
       } catch (err: any) {
         console.error('Erreur lors du chargement de la lettre:', err);
-        setError(`Impossible de charger les données de la lettre: ${err.response?.data?.message || 'Erreur serveur'}`);
+        setError(getErrorMessage(err)); // Utiliser la fonction utilitaire
       }
     };
-
+  
     fetchLetterData();
   }, [id, isNewLetter]);
 
@@ -147,13 +171,13 @@ const LetterEditorPage: React.FC = () => {
   const handleSave = async (asFinal: boolean = false) => {
     setIsSaving(true);
     setError(null);
-
+  
     try {
       const dataToSave = {
         ...formData,
         status: asFinal ? 'final' : formData.status
       };
-
+  
       const letterData = {
         title: dataToSave.title,
         content: dataToSave.content,
@@ -165,18 +189,22 @@ const LetterEditorPage: React.FC = () => {
         },
         status: dataToSave.status
       };
-
+  
       if (isNewLetter) {
+        setIsNavigating(true);
         const response = await api.post('/letters', letterData);
+        // Mettre à jour l'état avant la navigation
+        setFormData(dataToSave);
         navigate(`/dashboard/letters/${response.data.id}/edit`);
+        setIsNavigating(false);
       } else {
         await api.put(`/letters/${id}`, letterData);
+        setFormData(dataToSave);
       }
-
-      setFormData(dataToSave);
+  
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-
+  
       if (asFinal) {
         setTimeout(() => {
           navigate('/dashboard/letters');
@@ -184,7 +212,8 @@ const LetterEditorPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Error saving letter:', err);
-      setError(`Erreur lors de l'enregistrement: ${err.response?.data?.message || 'Erreur serveur'}`);
+      setError(getErrorMessage(err)); // Utiliser la fonction utilitaire
+      setIsNavigating(false);
     } finally {
       setIsSaving(false);
     }
@@ -193,23 +222,61 @@ const LetterEditorPage: React.FC = () => {
   const handleDelete = async () => {
     setIsSaving(true);
     setError(null);
-
+  
     try {
       await api.delete(`/letters/${id}`);
       navigate('/dashboard/letters');
     } catch (err: any) {
       console.error('Error deleting letter:', err);
-      setError(`Erreur lors de la suppression: ${err.response?.data?.message || 'Erreur serveur'}`);
+      setError(getErrorMessage(err)); // Utiliser la fonction utilitaire
     } finally {
       setIsSaving(false);
       setShowConfirmDialog(false);
     }
   };
-
+  
+  const getErrorMessage = (error: any): string => {
+    if (typeof error === 'string') {
+      return error;
+    }
+    
+    if (error?.response?.data) {
+      const data = error.response.data;
+      
+      // Si data est un objet avec message
+      if (typeof data === 'object' && data.message) {
+        return typeof data.message === 'string' ? data.message : JSON.stringify(data.message);
+      }
+      
+      // Si data est un objet avec error
+      if (typeof data === 'object' && data.error) {
+        return typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+      }
+      
+      // Si data est directement une chaîne
+      if (typeof data === 'string') {
+        return data;
+      }
+      
+      // Si data est un objet, le stringifier
+      if (typeof data === 'object') {
+        return JSON.stringify(data);
+      }
+    }
+    
+    // Fallback vers le message d'erreur standard
+    if (error?.message) {
+      return typeof error.message === 'string' ? error.message : JSON.stringify(error.message);
+    }
+    
+    return 'Une erreur inattendue s\'est produite';
+  };
+  
+  // Correction de la fonction generateAIContent
   const generateAIContent = async () => {
     setIsGenerating(true);
     setError(null);
-
+  
     try {
       // Validation des champs requis
       if (!formData.jobTitle?.trim() || !formData.company?.trim()) {
@@ -217,7 +284,7 @@ const LetterEditorPage: React.FC = () => {
         setIsGenerating(false);
         return;
       }
-
+  
       // Préparer les données pour l'API selon le format attendu
       const requestData = {
         jobTitle: formData.jobTitle.trim(),
@@ -238,7 +305,7 @@ const LetterEditorPage: React.FC = () => {
         language: aiSettings.language,
         saveAsLetter: aiSettings.saveAsLetter
       };
-
+  
       // Nettoyer les champs vides du userProfile
       Object.keys(requestData.userProfile).forEach(key => {
         const value = requestData.userProfile[key as keyof typeof requestData.userProfile];
@@ -246,36 +313,50 @@ const LetterEditorPage: React.FC = () => {
           delete requestData.userProfile[key as keyof typeof requestData.userProfile];
         }
       });
-
+  
       console.log('Données envoyées à l\'API:', requestData);
-
+  
       // Appel à l'API pour générer le contenu avec l'IA
       const response = await api.post('/letters/generate', requestData);
-
+  
       // Mise à jour du contenu avec la réponse de l'IA
       if (response.data?.data) {
-        setFormData(prev => ({
-          ...prev,
+        const newFormData = {
+          ...formData,
           content: response.data.data.content,
-          title: prev.title || `Lettre de motivation - ${formData.jobTitle} chez ${formData.company}`
-        }));
+          title: formData.title || `Lettre de motivation - ${formData.jobTitle} chez ${formData.company}`
+        };
+        
+        setFormData(newFormData);
+  
+        // Si une lettre a été sauvegardée automatiquement ET qu'on est sur une nouvelle lettre
+        if (response.data.data.letter && aiSettings.saveAsLetter && isNewLetter) {
+          // Attendre un peu pour que l'état soit mis à jour
+          setTimeout(() => {
+            navigate(`/dashboard/letters/${response.data.data.letter.id}/edit`);
+          }, 100);
+        }
+        // Si on est déjà sur une lettre existante et qu'on veut sauvegarder automatiquement
+        else if (response.data.data.letter && aiSettings.saveAsLetter && !isNewLetter) {
+          // Sauvegarder les modifications sur la lettre courante
+          try {
+            await handleSave(false);
+          } catch (saveError) {
+            console.error('Erreur lors de la sauvegarde automatique:', saveError);
+            setError(getErrorMessage(saveError)); // Utiliser la fonction utilitaire
+          }
+        }
       }
-
-      // Si une lettre a été sauvegardée automatiquement, rediriger
-      if (response.data.data.letter && aiSettings.saveAsLetter) {
-        navigate(`/dashboard/letters/${response.data.data.letter.id}/edit`);
-      }
-
+  
     } catch (err: any) {
       console.error('Error generating AI content:', err);
-      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la génération du contenu IA';
-      setError(errorMessage);
-      
-      // Mode démo en cas d'erreur (pour le développement)
+      setError(getErrorMessage(err)); // Utiliser la fonction utilitaire
     } finally {
       setIsGenerating(false);
     }
   };
+  
+
 
 
   return (
@@ -480,7 +561,7 @@ const LetterEditorPage: React.FC = () => {
                 name="title"
                 type="text"
                 placeholder="Ex: Candidature au poste de Développeur Frontend"
-                value={formData.title}
+                value={safeFormData.title}
                 onChange={handleInputChange}
                 className="py-2 px-3 w-full rounded-md border border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
