@@ -97,7 +97,12 @@ const LetterEditorPage: React.FC = () => {
       try {
         const response = await api.get(`/letters/${id}`);
         const letter = response.data;
-        
+        const serverContent = letter.content || '';
+        if (formData.content && formData.content !== serverContent && formData.content.length > 0) {
+         
+            return; // Ne pas écraser les données locales
+          
+        }
         setFormData({
           title: letter.title || '',
           company: letter.company || '',
