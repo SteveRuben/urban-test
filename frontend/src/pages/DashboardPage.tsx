@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  FaFileAlt, 
-  FaEye, 
-  FaPen, 
-  FaTrash, 
-  FaPlus, 
+import {
+  FaFileAlt,
+  FaEye,
+  FaPen,
+  FaTrash,
+  FaPlus,
   FaSearch,
   FaChartLine,
   FaRegClock,
@@ -15,7 +15,8 @@ import {
   FaRocket,
   FaTrophy,
   FaCalendarAlt,
-  FaStar
+  FaStar,
+  FaUser
 } from 'react-icons/fa';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Button from '../components/common/Button';
@@ -57,26 +58,26 @@ const DashboardPage: React.FC = () => {
   const { data: dashboardData, loading: isLoading, error } = useOptimizedFetch(
     async () => {
       if (!isAuthenticated || authLoading) return null;
-      
+
       const response = await api.get('/letters');
       const userLetters: Letter[] = response.data.data?.letters || response.data.letters || [];
-      
+
       // Calculer les statistiques avancées
       const now = new Date();
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      
+
       const finalLetters = userLetters.filter(letter => letter.status === 'final');
-      const thisWeekLetters = userLetters.filter(letter => 
+      const thisWeekLetters = userLetters.filter(letter =>
         new Date(letter.createdAt) >= oneWeekAgo
       );
-      
-      const completionRate = userLetters.length > 0 
+
+      const completionRate = userLetters.length > 0
         ? Math.round((finalLetters.length / userLetters.length) * 100)
         : 0;
-      
+
       const viewEstimate = Math.floor(finalLetters.length * 2.5);
       const avgResponseTime = finalLetters.length > 0 ? 3.2 : 0; // Mock data
-      
+
       return {
         letters: userLetters,
         stats: {
@@ -121,9 +122,9 @@ const DashboardPage: React.FC = () => {
   // Filtrage optimisé des lettres
   const filteredLetters = React.useMemo(() => {
     if (!searchTerm) return letters;
-    
+
     const term = searchTerm.toLowerCase();
-    return letters.filter(letter => 
+    return letters.filter(letter =>
       letter.title?.toLowerCase().includes(term) ||
       letter.company?.toLowerCase().includes(term) ||
       letter.jobTitle?.toLowerCase().includes(term)
@@ -135,36 +136,36 @@ const DashboardPage: React.FC = () => {
     if (!window.confirm(`Êtes-vous sûr de vouloir supprimer "${title}" ?`)) {
       return;
     }
-    
+
     setIsDeleting(id);
-    
+
     try {
       await api.delete(`/letters/${id}`);
-      
+
       // Mise à jour optimiste
       const updatedLetters = letters.filter(letter => letter.id !== id);
       setLetters(updatedLetters);
-      
+
       // Recalculer les stats
       const finalLetters = updatedLetters.filter(letter => letter.status === 'final');
-      const completionRate = updatedLetters.length > 0 
+      const completionRate = updatedLetters.length > 0
         ? Math.round((finalLetters.length / updatedLetters.length) * 100)
         : 0;
-      
+
       setStats(prev => ({
         ...prev,
         lettersCreated: updatedLetters.length,
         lettersViewed: Math.floor(finalLetters.length * 2.5),
         completionRate
       }));
-      
+
       toast.success('Lettre supprimée', 'La lettre a été supprimée avec succès');
-      
+
       analytics.track({
         action: 'letter_deleted',
         category: 'engagement'
       });
-      
+
     } catch (err: any) {
       console.error('Erreur lors de la suppression:', err);
       toast.error('Erreur', 'Impossible de supprimer la lettre');
@@ -182,9 +183,9 @@ const DashboardPage: React.FC = () => {
     navigate(path);
   };
 
-  const firebaseTimeStamptoDate = (params:any) => {
-    if(params.hasOwnProperty("_seconds")){
-      const milliseconds = params._seconds*1000 + params._nanoseconds/1000000;
+  const firebaseTimeStamptoDate = (params: any) => {
+    if (params.hasOwnProperty("_seconds")) {
+      const milliseconds = params._seconds * 1000 + params._nanoseconds / 1000000;
       return new Date(milliseconds);
     }
     return new Date();
@@ -225,12 +226,12 @@ const DashboardPage: React.FC = () => {
   if (error) {
     return (
       <DashboardLayout>
-        <div className="bg-red-50 border-l-4 border-red-500 p-6 mb-8 rounded-lg">
+        <div className="bg-rose-50 border-l-4 border-rose-500 p-6 mb-8 rounded-lg">
           <div className="flex items-center">
-            <FaExclamationTriangle className="text-red-500 mr-3 text-xl" />
+            <FaExclamationTriangle className="text-rose-500 mr-3 text-xl" />
             <div className="flex-1">
-              <h3 className="text-red-800 font-semibold">Erreur de chargement</h3>
-              <p className="text-red-700 mt-1">{error}</p>
+              <h3 className="text-rose-800 font-semibold">Erreur de chargement</h3>
+              <p className="text-rose-700 mt-1">{error}</p>
             </div>
             <Button
               onClick={() => window.location.reload()}
@@ -247,15 +248,15 @@ const DashboardPage: React.FC = () => {
 
   return (
     <>
-      <MetaTags 
+      <MetaTags
         title="Tableau de Bord - Motivation Letter AI"
         description="Gérez vos lettres de motivation, consultez vos statistiques et créez de nouvelles lettres."
       />
-      
+
       <DashboardLayout>
         {/* Welcome Section avec animations */}
         <LazySection animationType="slideUp">
-          <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+          <div className="mb-8 bg-gradient-to-r from-purple-50 to-emerald-50 rounded-2xl p-6 border border-purple-100">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
@@ -293,7 +294,7 @@ const DashboardPage: React.FC = () => {
             {/* Lettres créées */}
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300 card-hover-premium">
               <div className="flex items-center justify-between mb-4">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 w-12 h-12 rounded-xl flex items-center justify-center">
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600 w-12 h-12 rounded-xl flex items-center justify-center">
                   <FaRegFileAlt className="text-xl" />
                 </div>
                 <div className="text-right">
@@ -347,7 +348,7 @@ const DashboardPage: React.FC = () => {
                     {stats.completionRate}%
                   </div>
                   <div className="w-16 h-1 bg-gray-200 rounded-full mt-1">
-                    <div 
+                    <div
                       className="h-1 bg-green-500 rounded-full transition-all duration-1000"
                       style={{ width: `${stats.completionRate}%` }}
                     ></div>
@@ -393,20 +394,31 @@ const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                <FaRocket className="mr-3 text-blue-600" />
+                <FaRocket className="mr-3 text-purple-600" />
                 Actions rapides
               </h2>
               <div className="text-sm text-gray-500">
                 Accès direct à vos outils favoris
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <button
-                onClick={() => handleQuickAction('new_letter', '/dashboard/letters/new')}
-                className="group p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all duration-300 text-left card-hover-premium flex flex-col items-center justify-center"
+                onClick={() => handleQuickAction('new_cv', '/dashboard/cv/new')}
+                className="group p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 text-left card-hover-premium flex flex-col items-center justify-center"
               >
-                <div className="bg-blue-600  text-white w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <div className="bg-purple-600 text-white w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <FaUser />
+                </div>
+                <div className="font-semibold text-gray-800 mb-1">Nouveau CV</div>
+                <div className="text-sm text-gray-600">Créer depuis zéro</div>
+              </button>
+
+              <button
+                onClick={() => handleQuickAction('new_letter', '/dashboard/letters/new')}
+                className="group p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 transition-all duration-300 text-left card-hover-premium flex flex-col items-center justify-center"
+              >
+                <div className="bg-emerald-600  text-white w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <FaPlus />
                 </div>
                 <div className="font-semibold text-gray-800 mb-1">Nouvelle lettre</div>
@@ -414,14 +426,14 @@ const DashboardPage: React.FC = () => {
               </button>
 
               <button
-                onClick={() => handleQuickAction('templates', '/dashboard/templates')}
-                className="group p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 text-left card-hover-premium flex flex-col items-center justify-center"
+                onClick={() => handleQuickAction('cv', '/dashboard/cv')}
+                className="group p-4 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 transition-all duration-300 text-left card-hover-premium flex flex-col items-center justify-center"
               >
-                <div className="bg-purple-600 text-white w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <FaFileAlt />
+                <div className="bg-amber-600 text-white w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <FaUser />
                 </div>
-                <div className="font-semibold text-gray-800 mb-1">Templates</div>
-                <div className="text-sm text-gray-600">Modèles premium</div>
+                <div className="font-semibold text-gray-800 mb-1">Mes CV</div>
+                <div className="text-sm text-gray-600">Gérer vos CV</div>
               </button>
 
               <button
@@ -433,17 +445,6 @@ const DashboardPage: React.FC = () => {
                 </div>
                 <div className="font-semibold text-gray-800 mb-1">Mes lettres</div>
                 <div className="text-sm text-gray-600">{letters.length} lettres</div>
-              </button>
-
-              <button
-                onClick={() => handleQuickAction('upgrade', '/dashboard/subscription')}
-                className="group p-4 rounded-xl bg-gradient-to-br from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 transition-all duration-300 text-left card-hover-premium flex flex-col items-center justify-center"
-              >
-                <div className="bg-yellow-600 text-white w-10 h-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <FaTrophy />
-                </div>
-                <div className="font-semibold text-gray-800 mb-1">Upgrade</div>
-                <div className="text-sm text-gray-600">Plan Premium</div>
               </button>
             </div>
           </div>
@@ -459,12 +460,12 @@ const DashboardPage: React.FC = () => {
                     Lettres récentes
                   </h2>
                   {letters.length > 0 && (
-                    <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
+                    <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">
                       {letters.length} total
                     </span>
                   )}
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -484,17 +485,16 @@ const DashboardPage: React.FC = () => {
               {filteredLetters.length > 0 ? (
                 <div className="space-y-4">
                   {filteredLetters.slice(0, 5).map((letter, index) => (
-                    <div 
-                      key={letter.id} 
+                    <div
+                      key={letter.id}
                       className="group p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 card-hover-premium"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-2">
-                            <div className={`w-3 h-3 rounded-full ${
-                              letter.status === 'final' ? 'bg-green-500' : 'bg-yellow-500'
-                            }`}></div>
+                            <div className={`w-3 h-3 rounded-full ${letter.status === 'final' ? 'bg-green-500' : 'bg-yellow-500'
+                              }`}></div>
                             <h3 className="font-semibold text-gray-800 truncate">
                               {letter.title || 'Sans titre'}
                             </h3>
@@ -504,17 +504,16 @@ const DashboardPage: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          
+
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <div className="flex items-center">
                               <FaCalendarAlt className="mr-1" />
                               {formatDate(letter.updatedAt)}
                             </div>
-                            <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              letter.status === 'final' 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-yellow-100 text-yellow-700'
-                            }`}>
+                            <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${letter.status === 'final'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                              }`}>
                               {letter.status === 'final' ? (
                                 <>
                                   <FaRegCheckCircle className="mr-1" />
@@ -529,7 +528,7 @@ const DashboardPage: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 ml-4">
                           <Link
                             to={`/dashboard/letters/${letter.id}`}
@@ -561,7 +560,7 @@ const DashboardPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  
+
                   {letters.length > 5 && (
                     <div className="pt-4 text-center border-t border-gray-100">
                       <Button
@@ -584,7 +583,7 @@ const DashboardPage: React.FC = () => {
                     {searchTerm ? 'Aucune lettre trouvée' : 'Prêt à commencer ?'}
                   </h3>
                   <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                    {searchTerm 
+                    {searchTerm
                       ? `Aucun résultat pour "${searchTerm}". Essayez d'autres mots-clés.`
                       : "Créez votre première lettre de motivation professionnelle en quelques minutes avec notre IA avancée."}
                   </p>

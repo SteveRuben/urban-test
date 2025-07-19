@@ -188,10 +188,10 @@ const LoginPage: React.FC = () => {
         description="Connectez-vous à votre compte pour accéder à vos lettres de motivation et créer de nouveaux documents."
       />
       
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-emerald-50 to-amber-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background decoration */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl float-animation"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl float-animation" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl float-animation"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl float-animation" style={{animationDelay: '2s'}}></div>
         
         <LazySection animationType="slideUp">
           <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -199,10 +199,10 @@ const LoginPage: React.FC = () => {
               <div className="relative">
                 <div className="p-4 bg-white rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105 card-hover-premium">
                   <div className="relative">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
                       ML
                     </div>
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full border-2 border-white flex items-center justify-center">
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-amber-400 rounded-full border-2 border-white flex items-center justify-center">
                       <span className="text-xs font-bold text-black">AI</span>
                     </div>
                   </div>
@@ -259,7 +259,7 @@ const LoginPage: React.FC = () => {
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <FaEnvelope className={`h-5 w-5 transition-colors ${
                       validationErrors.email ? 'text-red-400' : 
-                      email ? 'text-blue-500' : 'text-gray-400'
+                      email ? 'text-purple-500' : 'text-gray-400'
                     }`} />
                   </div>
                   <input
@@ -273,8 +273,8 @@ const LoginPage: React.FC = () => {
                       validationErrors.email 
                         ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
                         : email 
-                          ? 'border-blue-300 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/50'
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-white'
+                          ? 'border-purple-300 focus:ring-purple-500 focus:border-purple-500 bg-purple-50/50'
+                          : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500 bg-white'
                     } focus:outline-none focus:ring-2 focus:ring-offset-1 placeholder-gray-400`}
                     placeholder="votre@email.com"
                     disabled={isLoading}
@@ -298,7 +298,7 @@ const LoginPage: React.FC = () => {
                   </label>
                   <Link 
                     to="/forgot-password" 
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                    className="text-sm text-purple-600 hover:text-purple-800 font-medium transition-colors"
                   >
                     Mot de passe oublié ?
                   </Link>
@@ -307,7 +307,7 @@ const LoginPage: React.FC = () => {
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <FaLock className={`h-5 w-5 transition-colors ${
                       validationErrors.password ? 'text-red-400' : 
-                      password ? 'text-blue-500' : 'text-gray-400'
+                      password ? 'text-purple-500' : 'text-gray-400'
                     }`} />
                   </div>
                   <input
@@ -321,8 +321,8 @@ const LoginPage: React.FC = () => {
                       validationErrors.password 
                         ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
                         : password 
-                          ? 'border-blue-300 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/50'
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-white'
+                          ? 'border-purple-300 focus:ring-purple-500 focus:border-purple-500 bg-purple-50/50'
+                          : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500 bg-white'
                     } focus:outline-none focus:ring-2 focus:ring-offset-1 placeholder-gray-400`}
                     placeholder="••••••••"
                     disabled={isLoading}
@@ -352,7 +352,7 @@ const LoginPage: React.FC = () => {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors"
+                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded transition-colors"
                     disabled={isLoading}
                   />
                   <label htmlFor="remember-me" className="ml-3 block text-sm text-gray-700">
@@ -368,7 +368,7 @@ const LoginPage: React.FC = () => {
               <div>
                 <button
                   type="submit"
-                  className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 transform hover:scale-[1.02] btn-premium ${
+                  className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 transform hover:scale-[1.02] btn-premium ${
                     isLoading ? 'opacity-70 cursor-not-allowed' : ''
                   }`}
                   disabled={isLoading}
@@ -430,7 +430,7 @@ const LoginPage: React.FC = () => {
                 Vous n'avez pas de compte ?{' '}
                 <Link 
                   to="/register" 
-                  className="font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                  className="font-semibold text-purple-600 hover:text-purple-800 transition-colors"
                 >
                   Créer un compte gratuitement
                 </Link>

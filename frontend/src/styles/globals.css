@@ -2,14 +2,16 @@
 @import "tailwindcss";
 
 :root {
-  --primary: #6366F1;
-  --primary-dark: #4F46E5;
-  --secondary: #10B981;
+  --primary: #a855f7;
+  --primary-dark: #9333ea;
+  --secondary: #10b981;
   --secondary-dark: #059669;
-  --bg-primary: #4c6fb5;
-  --bg-secondary: #E5E7EB;
-  --black: #121212;
-  --white: #FFFFFF;
+  --accent: #f59e0b;
+  --accent-dark: #d97706;
+  --bg-primary: #faf5ff;
+  --bg-secondary: #f1f5f9;
+  --black: #0f172a;
+  --white: #ffffff;
 }
 
 body {
@@ -67,7 +69,7 @@ button {
 
 button:focus, button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.5);
 }
 
 h1, h2, h3, h4, h5, h6, p {
@@ -186,7 +188,7 @@ button, a {
 
 .btn-premium:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 10px 25px rgba(168, 85, 247, 0.3);
 }
 
 /* Pulse Animation for CTAs */
@@ -210,10 +212,10 @@ button, a {
 .text-gradient-animated {
   background: linear-gradient(
     -45deg, 
-    #6366f1, 
-    #8b5cf6, 
-    #06b6d4, 
-    #10b981
+    #a855f7, 
+    #9333ea, 
+    #10b981, 
+    #f59e0b
   );
   background-size: 400% 400%;
   background-clip: text;
@@ -282,7 +284,7 @@ button, a {
   position: absolute;
   inset: 0;
   padding: 2px;
-  background: linear-gradient(45deg, #6366f1, #8b5cf6, #06b6d4);
+  background: linear-gradient(45deg, #a855f7, #9333ea, #10b981);
   border-radius: inherit;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: xor;

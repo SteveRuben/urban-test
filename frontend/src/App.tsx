@@ -12,6 +12,11 @@ import SubscriptionPage from './pages/SubscriptionPage';
 import ProfilePage from './pages/ProfilePage';
 import LettersPage from './pages/LettersPage';
 import TemplatesPage from './pages/TemplatesPage';
+import CVsPage from './pages/CVsPage';
+import CVCreatePage from './pages/CVCreatePage';
+import CVViewPage from './pages/CVViewPage';
+import CVEditorPage from './pages/CVEditorPage';
+import CVAnalysisPage from './pages/CVAnalysisPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import LoadingSpinner from './components/layout/LoadingSpinner';
 import { ToastContainer } from './components/ui/Toast';
@@ -118,6 +123,70 @@ const AppContent: React.FC = () => {
               <TemplatesPage />
             </ProtectedRoute>
           } 
+        />
+        
+        {/* Routes CV */}
+        <Route 
+          path="/dashboard/cv" 
+          element={
+            <ProtectedRoute>
+              <CVsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/dashboard/cv/new" 
+          element={
+            <ProtectedRoute>
+              <CVCreatePage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/dashboard/cv/:id" 
+          element={
+            <ProtectedRoute>
+              <CVViewPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/dashboard/cv/:id/edit" 
+          element={
+            <ProtectedRoute>
+              <CVEditorPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/dashboard/cv/:id/analyze" 
+          element={
+            <ProtectedRoute>
+              <CVAnalysisPage />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Routes CV legacy (pour compatibilité) */}
+        <Route 
+          path="/dashboard/cvs" 
+          element={<Navigate to="/dashboard/cv" replace />} 
+        />
+        <Route 
+          path="/dashboard/cvs/new" 
+          element={<Navigate to="/dashboard/cv/new" replace />} 
+        />
+        <Route 
+          path="/dashboard/cvs/:id" 
+          element={<Navigate to="/dashboard/cv/:id" replace />} 
+        />
+        <Route 
+          path="/dashboard/cvs/:id/edit" 
+          element={<Navigate to="/dashboard/cv/:id/edit" replace />} 
+        />
+        <Route 
+          path="/dashboard/cvs/:id/analyze" 
+          element={<Navigate to="/dashboard/cv/:id/analyze" replace />} 
         />
         
         {/* Routes legacy pour compatibilité */}

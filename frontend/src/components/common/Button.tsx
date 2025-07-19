@@ -54,46 +54,46 @@ const Button: React.FC<ButtonProps> = ({
     ${pulse ? 'pulse-cta' : ''}
   `.replace(/\s+/g, ' ').trim();
   
-  // Couleurs améliorées avec gradients et effets premium
+  // Couleurs améliorées avec gradients et effets premium - Nouvelle palette violet/vert
   const variantClasses = {
     primary: `
-      bg-gradient-to-r from-blue-600 to-purple-600 text-white 
-      hover:from-blue-700 hover:to-purple-700 focus:ring-blue-500 
+      bg-gradient-to-r from-purple-600 to-purple-700 text-white 
+      hover:from-purple-700 hover:to-purple-800 focus:ring-purple-500 
       shadow-lg hover:shadow-xl transform hover:-translate-y-0.5
       border border-transparent
     `.replace(/\s+/g, ' ').trim(),
     
     secondary: `
-      bg-gradient-to-r from-gray-600 to-gray-700 text-white 
-      hover:from-gray-700 hover:to-gray-800 focus:ring-gray-500 
+      bg-gradient-to-r from-emerald-600 to-emerald-700 text-white 
+      hover:from-emerald-700 hover:to-emerald-800 focus:ring-emerald-500 
       shadow-md hover:shadow-lg transform hover:-translate-y-0.5
       border border-transparent
     `.replace(/\s+/g, ' ').trim(),
     
     outline: `
-      border-2 border-blue-600 text-blue-600 bg-white 
-      hover:bg-blue-50 hover:border-blue-700 hover:text-blue-700 
-      focus:ring-blue-500 shadow-sm hover:shadow-md
+      border-2 border-purple-600 text-purple-600 bg-white 
+      hover:bg-purple-50 hover:border-purple-700 hover:text-purple-700 
+      focus:ring-purple-500 shadow-sm hover:shadow-md
       transform hover:-translate-y-0.5
     `.replace(/\s+/g, ' ').trim(),
     
     danger: `
-      bg-gradient-to-r from-red-600 to-red-700 text-white 
-      hover:from-red-700 hover:to-red-800 focus:ring-red-500 
+      bg-gradient-to-r from-rose-600 to-rose-700 text-white 
+      hover:from-rose-700 hover:to-rose-800 focus:ring-rose-500 
       shadow-lg hover:shadow-xl transform hover:-translate-y-0.5
       border border-transparent
     `.replace(/\s+/g, ' ').trim(),
     
     ghost: `
-      text-gray-700 bg-transparent hover:bg-gray-100 
-      focus:ring-gray-500 hover:text-gray-900
+      text-neutral-700 bg-transparent hover:bg-neutral-100 
+      focus:ring-neutral-500 hover:text-neutral-900
       border border-transparent
     `.replace(/\s+/g, ' ').trim(),
     
     gradient: `
-      bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500 text-white 
-      hover:from-yellow-500 hover:via-red-600 hover:to-pink-600
-      focus:ring-pink-500 shadow-lg hover:shadow-xl 
+      bg-gradient-to-r from-purple-500 via-emerald-500 to-amber-500 text-white 
+      hover:from-purple-600 hover:via-emerald-600 hover:to-amber-600
+      focus:ring-purple-500 shadow-lg hover:shadow-xl 
       transform hover:-translate-y-0.5 border border-transparent
     `.replace(/\s+/g, ' ').trim()
   };

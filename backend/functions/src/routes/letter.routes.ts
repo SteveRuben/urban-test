@@ -20,6 +20,8 @@ router.delete('/:id', LetterController.deleteLetter);           // Supprimer une
 // Actions spéciales sur les lettres
 router.post('/:id/duplicate', LetterController.duplicateLetter); // Dupliquer une lettre
 router.post('/:id/finalize', LetterController.finalizeLetter);   // Finaliser une lettre
-router.get('/:id/export', LetterController.exportLetter);        // Exporter une lettre
+router.post('/:id/increment-views', LetterController.incrementViewLetter);
+router.get('/:id/export',  LetterController.exportLetter);        // Exporter une lettre
+router.post('/:id/export', LetterController.exportLetter);
 
 export default router;

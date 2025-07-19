@@ -39,27 +39,27 @@ const HomePage: React.FC = () => {
       <div className="min-h-screen bg-gray-50">
         {/* Hero Section */}
         <LazySection animationType="fade">
-          <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white relative overflow-hidden">
+          <section className="bg-gradient-to-br from-purple-600 via-purple-700 to-emerald-800 text-white relative overflow-hidden">
             {/* Background decoration with animations */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl float-animation"></div>
-            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl float-animation" style={{animationDelay: '1s'}}></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-emerald-600/20"></div>
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl float-animation"></div>
+            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl float-animation" style={{animationDelay: '1s'}}></div>
             
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
               <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
                 <div className="lg:w-1/2 max-w-xl">
-                  <div className="inline-flex items-center bg-blue-500/20 rounded-full px-4 py-2 text-sm font-medium mb-6 pulse-cta">
+                  <div className="inline-flex items-center bg-purple-500/20 rounded-full px-4 py-2 text-sm font-medium mb-6 pulse-cta">
                     <FaRocket className="mr-2" />
                     Nouveau : IA intégrée pour la génération
                   </div>
                   
                   <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-                    Des lettres de motivation qui 
+                    CV et lettres de motivation qui 
                     <span className="text-yellow-300 block text-gradient-animated">décrochent des entretiens</span>
                   </h1>
                   
-                  <p className="text-lg md:text-xl text-blue-100 mb-8 leading-relaxed">
-                    Créez une lettre de motivation professionnelle en quelques minutes grâce à nos modèles éprouvés et notre générateur IA intelligent.
+                  <p className="text-lg md:text-xl text-purple-100 mb-8 leading-relaxed">
+                    Créez des CV professionnels et des lettres de motivation percutantes en quelques minutes grâce à notre IA avancée et nos templates premium.
                   </p>
                   
                   <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -67,8 +67,8 @@ const HomePage: React.FC = () => {
                       to="/register" 
                       onClick={() => handleCTAClick('hero-register')}
                       className="inline-flex items-center justify-center px-8 py-4 rounded-xl 
-                      bg-blue-700/50 text-blue-700 font-semibold text-lg transition-all duration-300 
-                      hover:bg-blue-800/50 hover:shadow-xl hover:scale-105 group btn-premium"
+                      bg-white/20 text-white font-semibold text-lg transition-all duration-300 
+                      hover:bg-white/30 hover:shadow-xl hover:scale-105 group btn-premium"
                     >
                       Commencer gratuitement
                       <FaAngleRight className="ml-2 group-hover:translate-x-1 transition-transform" />
@@ -76,14 +76,14 @@ const HomePage: React.FC = () => {
                     <Link 
                       to="/dashboard/templates" 
                       onClick={() => handleCTAClick('hero-templates')}
-                      className="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-blue-700/50 text-white border border-blue-400/50 font-semibold text-lg transition-all duration-300 hover:bg-blue-600/50 backdrop-blur-sm"
+                      className="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-emerald-600/50 text-white border border-emerald-400/50 font-semibold text-lg transition-all duration-300 hover:bg-emerald-500/50 backdrop-blur-sm"
                     >
                       Voir les modèles
                     </Link>
                   </div>
                   
                   {/* Trust indicators with animations */}
-                  <div className="flex items-center gap-6 text-blue-200">
+                  <div className="flex items-center gap-6 text-purple-200">
                     <div className="flex items-center">
                       <div className="flex -space-x-2 mr-3">
                         {[...Array(4)].map((_, i) => (
@@ -137,41 +137,41 @@ const HomePage: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-16">
                 <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                  Créez des lettres de motivation qui vous démarquent
+                  CV et lettres de motivation qui vous démarquent
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  Notre plateforme vous offre tous les outils nécessaires pour créer une lettre de motivation percutante qui retient l'attention des recruteurs.
+                  Notre plateforme vous offre tous les outils nécessaires pour créer des CV professionnels et des lettres de motivation percutantes qui retiennent l'attention des recruteurs.
                 </p>
               </div>
 
               <div className="grid md:grid-cols-3 gap-8">
-                <div className="group p-8 bg-gradient-to-br from-gray-50 to-blue-50/50 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2 card-hover-premium">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
+                <div className="group p-8 bg-gradient-to-br from-gray-50 to-purple-50/50 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2 card-hover-premium">
+                  <div className="w-16 h-16 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-600 mb-6 group-hover:scale-110 transition-transform">
                     <FaRegFileAlt className="text-2xl" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Modèles professionnels</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">CV & Lettres professionnels</h3>
                   <p className="text-gray-600 leading-relaxed">
-                    Accédez à une bibliothèque de modèles conçus par des experts en recrutement et adaptés à différents secteurs d'activité.
+                    Accédez à une bibliothèque de modèles de CV et lettres de motivation conçus par des experts en recrutement et adaptés à différents secteurs.
                   </p>
                 </div>
 
-                <div className="group p-8 bg-gradient-to-br from-gray-50 to-purple-50/50 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2 card-hover-premium">
-                  <div className="w-16 h-16 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-600 mb-6 group-hover:scale-110 transition-transform">
+                <div className="group p-8 bg-gradient-to-br from-gray-50 to-emerald-50/50 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2 card-hover-premium">
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 mb-6 group-hover:scale-110 transition-transform">
                     <FaPencilAlt className="text-2xl" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">IA intelligente</h3>
                   <p className="text-gray-600 leading-relaxed">
-                    Notre IA vous aide à générer du contenu personnalisé et vous guide pour créer une lettre adaptée à chaque offre d'emploi.
+                    Notre IA vous aide à générer du contenu personnalisé pour vos CV et lettres, adaptés à chaque offre d'emploi et optimisés pour les ATS.
                   </p>
                 </div>
 
-                <div className="group p-8 bg-gradient-to-br from-gray-50 to-green-50/50 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2 card-hover-premium">
-                  <div className="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center text-green-600 mb-6 group-hover:scale-110 transition-transform">
+                <div className="group p-8 bg-gradient-to-br from-gray-50 to-amber-50/50 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2 card-hover-premium">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 mb-6 group-hover:scale-110 transition-transform">
                     <FaChartLine className="text-2xl" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Analyse d'impact</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Analyse & Optimisation</h3>
                   <p className="text-gray-600 leading-relaxed">
-                    Obtenez des commentaires instantanés sur l'efficacité de votre lettre et des suggestions d'amélioration ciblées.
+                    Obtenez des analyses détaillées de vos CV et lettres avec des suggestions d'amélioration pour maximiser vos chances de décrocher un entretien.
                   </p>
                 </div>
               </div>
@@ -188,7 +188,7 @@ const HomePage: React.FC = () => {
                   Comment ça marche
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  Trois étapes simples pour créer une lettre de motivation professionnelle qui fait mouche
+                  Trois étapes simples pour créer des CV et lettres de motivation professionnels qui font mouche
                 </p>
               </div>
 
@@ -200,7 +200,7 @@ const HomePage: React.FC = () => {
                     </div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">Choisissez un modèle</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      Parcourez notre collection de modèles professionnels et sélectionnez celui qui correspond le mieux à votre secteur d'activité.
+                      Parcourez notre collection de modèles de CV et lettres de motivation professionnels adaptés à votre secteur d'activité et niveau d'expérience.
                     </p>
                   </div>
                   <div className="hidden md:block absolute top-1/2 left-full w-16 h-1 bg-gradient-to-r from-blue-200 to-blue-300 transform -translate-y-1/2 z-0 rounded-full"></div>
@@ -226,7 +226,7 @@ const HomePage: React.FC = () => {
                     </div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">Téléchargez et postulez</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      Exportez votre lettre en format PDF ou Word professionnel, prête à être envoyée aux recruteurs.
+                      Exportez vos CV et lettres en format PDF ou Word professionnel, prêts à être envoyés aux recruteurs.
                     </p>
                   </div>
                 </div>
@@ -244,7 +244,7 @@ const HomePage: React.FC = () => {
                   Ce que nos utilisateurs disent
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  Des milliers de personnes ont décroché des entretiens grâce à leurs lettres de motivation
+                  Des milliers de personnes ont décroché des entretiens grâce à leurs CV et lettres de motivation
                 </p>
               </div>
 

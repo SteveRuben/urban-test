@@ -44,8 +44,9 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:5001/motivationletter-ai/us-central1',
-        changeOrigin: true
+        target: 'https://api-ybcarzkuva-uc.a.run.app/',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
   },

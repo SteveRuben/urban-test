@@ -1,4 +1,5 @@
 // src/services/user.service.ts
+import { logger } from 'firebase-functions';
 import { db, COLLECTIONS } from '../config/firebase';
 import { Subscription, SubscriptionPlan } from '../models/subscription.model';
 import { User, UserStats } from '../models/user.model';
@@ -17,7 +18,7 @@ export class UserService {
       // Validation des données requises
       const requiredFields = ['id', 'email', 'displayName'];
       const missingFields = ValidationUtil.validateRequiredFields(userData, requiredFields);
-      
+
       if (missingFields.length > 0) {
         throw new ValidationError(`Champs manquants: ${missingFields.join(', ')}`);
       }
@@ -26,17 +27,17 @@ export class UserService {
         throw new ValidationError('Email invalide');
       }
 
-     /*  let plan = (await SubscriptionService.getAvailablePlans()).find(p => p.id === planId);
-      if (!plan) {
-        throw new ValidationError('Plan d\'abonnement invalide');
-      } */
-     let subplanId = planId=== 'free' ? SubscriptionPlan.FREE 
-                : planId === 'basic' ? SubscriptionPlan.BASIC 
-                : planId === 'pro' ? SubscriptionPlan.PRO 
-                : planId == 'lifetime'? SubscriptionPlan.PREMIUM : SubscriptionPlan.LIFETIME; 
-      let subscription: Partial<Subscription>={
+      /*  let plan = (await SubscriptionService.getAvailablePlans()).find(p => p.id === planId);
+       if (!plan) {
+         throw new ValidationError('Plan d\'abonnement invalide');
+       } */
+      let subplanId = planId === 'free' ? SubscriptionPlan.FREE
+        : planId === 'basic' ? SubscriptionPlan.BASIC
+          : planId === 'pro' ? SubscriptionPlan.PRO
+            : planId == 'lifetime' ? SubscriptionPlan.PREMIUM : SubscriptionPlan.LIFETIME;
+      let subscription: Partial<Subscription> = {
         planId: planId,
-        plan:subplanId,
+        plan: subplanId,
       }
       const newUser: User = {
         id: userData.id!,
@@ -52,7 +53,7 @@ export class UserService {
         updatedAt: new Date(),
         lastLoginAt: new Date()
       };
-      
+
 
       // Vérifier si l'utilisateur existe déjà
       const existingUser = await this.collection.doc(newUser.id).get();
@@ -82,13 +83,13 @@ export class UserService {
       }
 
       const userDoc = await this.collection.doc(userId).get();
-      
+
       if (!userDoc.exists) {
         throw new NotFoundError('Utilisateur non trouvé');
       }
 
       const userData = userDoc.data() as User;
-      
+
       // Convertir les Timestamps en Date
       return {
         ...userData,
@@ -165,7 +166,7 @@ export class UserService {
     try {
       const userRef = this.collection.doc(userId);
       const user = await this.getUserById(userId);
-      
+
       const currentMonth = new Date().toISOString().substring(0, 7); // Format: YYYY-MM
       const currentAIUsage = user.aiUsage || {};
       currentAIUsage[currentMonth] = (currentAIUsage[currentMonth] || 0) + 1;
@@ -210,7 +211,7 @@ export class UserService {
         .get();
 
       const letters = lettersSnapshot.docs.map(doc => doc.data());
-      
+
       const stats: UserStats = {
         userId,
         lettersCreated: letters.length,
@@ -247,6 +248,70 @@ export class UserService {
       // Cela sera implémenté dans les services correspondants
     } catch (error) {
       console.error('Erreur lors de la suppression de l\'utilisateur:', error);
+      throw error;
+    }
+  }
+
+  static async checkCVCreationLimit(userId: string): Promise<{
+    canCreate: boolean;
+    currentCount: number;
+    limit: number;
+    plan: string;
+  }> {
+    try {
+      const subscription = await SubscriptionService.getActiveUserSubscription(userId);
+
+      // Compter les CV existants
+      const cvsSnapshot = await db.collection(COLLECTIONS.CVS)
+        .where('userId', '==', userId)
+        .get();
+
+      const currentCount = cvsSnapshot.size;
+
+      // Déterminer la limite selon le plan
+      let limit = 2; // Plan gratuit
+      if (subscription) {
+        switch (subscription.plan) {
+          case 'basic': limit = 5; break;
+          case 'pro': limit = 15; break;
+          case 'premium': limit = 50; break;
+        }
+      }
+
+      return {
+        canCreate: currentCount < limit,
+        currentCount,
+        limit,
+        plan: subscription?.plan || 'free'
+      };
+    } catch (error) {
+      logger.error('Erreur vérification limite CV:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtenir les statistiques CV de l'utilisateur
+   */
+  static async getUserCVStats(userId: string): Promise<any> {
+    try {
+      const cvsSnapshot = await db.collection(COLLECTIONS.CVS)
+        .where('userId', '==', userId)
+        .get();
+
+      const cvs = cvsSnapshot.docs.map(doc => doc.data());
+
+      return {
+        totalCVs: cvs.length,
+        draftCVs: cvs.filter(cv => cv.status === 'draft').length,
+        completedCVs: cvs.filter(cv => cv.status === 'completed').length,
+        recentlyUpdated: cvs.filter(cv => {
+          const daysSinceUpdate = (new Date().getTime() - cv.updatedAt.getTime()) / (1000 * 60 * 60 * 24);
+          return daysSinceUpdate <= 7;
+        }).length
+      };
+    } catch (error) {
+      logger.error('Erreur stats CV utilisateur:', error);
       throw error;
     }
   }

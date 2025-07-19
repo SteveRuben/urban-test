@@ -107,4 +107,36 @@ router.post('/:id/rate', TemplateController.rateTemplate);
  */
 router.post('/:id/duplicate', TemplateController.duplicateTemplate);
 
+
+/**
+ * 
+ * // Templates publics
+router.get('/templates', templateController.getTemplates);
+router.get('/templates/:id', templateController.getTemplate);
+router.get('/templates/recommendations', templateController.getRecommendations);
+
+// Gestion des instances de templates (authentification requise)
+router.post('/templates/instances', 
+  validateTemplateInstance,
+  templateController.createTemplateInstance
+);
+
+router.get('/templates/instances', templateController.getUserInstances);
+router.get('/templates/instances/:instanceId', templateController.getInstanceById);
+router.put('/templates/instances/:instanceId', templateController.updateInstance);
+router.delete('/templates/instances/:instanceId', templateController.deleteInstance);
+
+// Génération IA pour templates (limitations selon abonnement)
+router.post('/templates/instances/:instanceId/generate',
+  subscriptionMiddleware(['basic', 'pro', 'premium']),
+  rateLimitMiddleware(10, 60000), // 10 générations par minute
+  templateController.generateContent
+);
+
+router.post('/templates/instances/:instanceId/improve',
+  subscriptionMiddleware(['pro', 'premium']),
+  rateLimitMiddleware(5, 60000),
+  templateController.improveLetter
+);
+ */
 export default router;

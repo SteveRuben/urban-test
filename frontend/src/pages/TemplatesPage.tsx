@@ -1516,7 +1516,7 @@ const TemplatesPage: React.FC = () => {
     return (
       <DashboardLayout>
         <MetaTags 
-          title="Modèles de lettres de motivation | TactiqCV"
+          title="Modèles de lettres de motivation | motivationletter.ai"
           description="Découvrez notre collection de modèles professionnels pour créer des lettres de motivation percutantes"
         />
         <LoadingComponent />
@@ -1528,7 +1528,7 @@ const TemplatesPage: React.FC = () => {
     return (
       <DashboardLayout>
         <MetaTags 
-          title="Erreur - Modèles de lettres | TactiqCV"
+          title="Erreur - Modèles de lettres | motivationletter.ai"
           description="Une erreur s'est produite lors du chargement des modèles"
         />
         <ErrorComponent />
@@ -1540,7 +1540,7 @@ const TemplatesPage: React.FC = () => {
     <ErrorBoundary>
       <DashboardLayout>
         <MetaTags 
-          title={`Modèles de lettres de motivation (${stats.totalTemplates}) | TactiqCV`}
+          title={`Modèles de lettres de motivation (${stats.totalTemplates}) | motivationletter.ai`}
           description={`Explorez ${stats.totalTemplates} modèles professionnels de lettres de motivation. Templates gratuits et premium pour candidatures d'emploi, bourses et stages.`}
           keywords="modèles lettre motivation, templates CV, candidature emploi, lettre bourse, stage"
         />

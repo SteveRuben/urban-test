@@ -2,7 +2,7 @@
 import { db, COLLECTIONS } from '../config/firebase';
 import { Subscription, SubscriptionStatus, SubscriptionPlan, Plan, SUBSCRIPTION_PLANS } from '../models/subscription.model';
 import { PlanType, SubscriptionInterval } from '../models/payment.model';
-import { NotFoundError, ValidationError, ForbiddenError } from '../utils/errors.util';
+import { NotFoundError, ValidationError, ForbiddenError, AppError } from '../utils/errors.util';
 import { ValidationUtil } from '../utils/validation.util';
 import { logger } from 'firebase-functions/v2';
 
@@ -798,4 +798,636 @@ export class SubscriptionService {
       throw error;
     }
   }
+
+  /**
+ * Vérifier les limites spécifiques aux nouvelles fonctionnalités
+ */
+static async checkFeatureLimit(
+  userId: string, 
+  feature: 'cv_creation' | 'template_premium' | 'ai_analysis' | 'export_advanced' | 'cv_analysis' | 'job_matching'
+): Promise<{
+  canUse: boolean;
+  currentUsage?: number;
+  limit?: number;
+  requiresUpgrade?: boolean;
+  currentPlan: string;
+  nextPlan?: string;
+}> {
+  try {
+    const subscription = await this.getActiveUserSubscription(userId);
+    const plan = subscription?.plan || 'free';
+    
+    switch (feature) {
+      case 'cv_creation':
+        const cvCount = await db.collection(COLLECTIONS.CVS)
+          .where('userId', '==', userId)
+          .get();
+        
+        const cvLimits = { 
+          free: 2, 
+          basic: 5, 
+          pro: 15, 
+          premium: 50,
+          lifetime: 50 
+        };
+        const limit = cvLimits[plan as keyof typeof cvLimits] || 2;
+        
+        return {
+          canUse: cvCount.size < limit,
+          currentUsage: cvCount.size,
+          limit,
+          requiresUpgrade: cvCount.size >= limit,
+          currentPlan: plan,
+          nextPlan: plan === 'free' ? 'basic' : plan === 'basic' ? 'pro' : 'premium'
+        };
+        
+      case 'template_premium':
+        const premiumAccess = ['pro', 'premium', 'lifetime'].includes(plan);
+        return {
+          canUse: premiumAccess,
+          requiresUpgrade: !premiumAccess,
+          currentPlan: plan,
+          nextPlan: plan === 'free' || plan === 'basic' ? 'pro' : undefined
+        };
+        
+      case 'ai_analysis':
+      case 'cv_analysis':
+        const analysisAccess = ['basic', 'pro', 'premium', 'lifetime'].includes(plan);
+        return {
+          canUse: analysisAccess,
+          requiresUpgrade: !analysisAccess,
+          currentPlan: plan,
+          nextPlan: plan === 'free' ? 'basic' : undefined
+        };
+        
+      case 'job_matching':
+        const matchingAccess = ['pro', 'premium', 'lifetime'].includes(plan);
+        return {
+          canUse: matchingAccess,
+          requiresUpgrade: !matchingAccess,
+          currentPlan: plan,
+          nextPlan: plan === 'free' || plan === 'basic' ? 'pro' : undefined
+        };
+        
+      case 'export_advanced':
+        const exportAccess = ['pro', 'premium', 'lifetime'].includes(plan);
+        
+        // Vérifier l'usage mensuel des exports pour les plans limités
+        if (exportAccess && plan !== 'premium' && plan !== 'lifetime') {
+          const currentMonth = new Date().toISOString().substring(0, 7);
+          const exportsSnapshot = await db.collection(COLLECTIONS.CV_EXPORTS)
+            .where('userId', '==', userId)
+            .where('createdAt', '>=', new Date(currentMonth + '-01'))
+            .get();
+          
+          const monthlyExportLimits = { pro: 20, basic: 5 };
+          const monthlyLimit = monthlyExportLimits[plan as keyof typeof monthlyExportLimits] || 0;
+          
+          return {
+            canUse: exportsSnapshot.size < monthlyLimit,
+            currentUsage: exportsSnapshot.size,
+            limit: monthlyLimit,
+            requiresUpgrade: exportsSnapshot.size >= monthlyLimit,
+            currentPlan: plan,
+            nextPlan: 'premium'
+          };
+        }
+        
+        return {
+          canUse: exportAccess,
+          requiresUpgrade: !exportAccess,
+          currentPlan: plan,
+          nextPlan: plan === 'free' || plan === 'basic' ? 'pro' : undefined
+        };
+        
+      default:
+        return { 
+          canUse: false, 
+          requiresUpgrade: true, 
+          currentPlan: plan,
+          nextPlan: 'basic'
+        };
+    }
+  } catch (error) {
+    logger.error('Erreur vérification limite fonctionnalité:', error);
+    throw new AppError('Erreur lors de la vérification des limites', 500);
+  }
+}
+
+/**
+ * Vérifier les limites d'utilisation IA spécifiques aux nouvelles fonctionnalités
+ */
+static async checkAIFeatureUsage(
+  userId: string, 
+  featureType: 'cv_generation' | 'cv_analysis' | 'job_matching' | 'template_generation'
+): Promise<{
+  canUse: boolean;
+  currentUsage: number;
+  limit: number | null;
+  resetDate: Date | null;
+  plan: string;
+}> {
+  try {
+    const subscription = await this.getActiveUserSubscription(userId);
+    const plan = subscription?.plan || 'free';
+    
+    // Définir les limites par fonctionnalité et par plan
+    const featureLimits = {
+      cv_generation: {
+        free: 0,
+        basic: 3,
+        pro: 10,
+        premium: null, // illimité
+        lifetime: null
+      },
+      cv_analysis: {
+        free: 0,
+        basic: 5,
+        pro: 20,
+        premium: null,
+        lifetime: null
+      },
+      job_matching: {
+        free: 0,
+        basic: 0,
+        pro: 15,
+        premium: null,
+        lifetime: null
+      },
+      template_generation: {
+        free: 0,
+        basic: 10,
+        pro: 30,
+        premium: null,
+        lifetime: null
+      }
+    };
+    
+    const limit = featureLimits[featureType][plan as keyof typeof featureLimits[typeof featureType]] || 0;
+    
+    // Compter l'usage actuel du mois
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    const usageSnapshot = await db.collection(COLLECTIONS.AI_USAGE)
+      .where('userId', '==', userId)
+      .where('featureType', '==', featureType)
+      .where('createdAt', '>=', new Date(currentMonth + '-01'))
+      .get();
+    
+    const currentUsage = usageSnapshot.size;
+    
+    // Date de réinitialisation (1er du mois prochain)
+    const resetDate = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
+    
+    return {
+      canUse: limit === null || currentUsage < limit,
+      currentUsage,
+      limit,
+      resetDate,
+      plan
+    };
+  } catch (error) {
+    logger.error('Erreur vérification usage IA fonctionnalité:', error);
+    throw new AppError('Erreur lors de la vérification de l\'usage IA', 500);
+  }
+}
+
+/**
+ * Enregistrer l'utilisation d'une fonctionnalité IA
+ */
+static async logAIFeatureUsage(
+  userId: string,
+  featureType: 'cv_generation' | 'cv_analysis' | 'job_matching' | 'template_generation',
+  metadata?: {
+    cvId?: string;
+    jobTitle?:string;
+    company?:string;
+    matchingScore?:string;
+    cvRegion?:string;
+    targetRegion?:string;
+    targetJob?: string;
+    type?:string;
+    templateId?: string;
+    model?: string;
+    tokensUsed?: number;
+    cost?: number;
+  }
+): Promise<void> {
+  try {
+    const usageId = db.collection(COLLECTIONS.AI_USAGE).doc().id;
+    const usageLog = {
+      id: usageId,
+      userId,
+      featureType,
+      metadata: metadata || {},
+      createdAt: new Date(),
+      month: new Date().toISOString().substring(0, 7) // YYYY-MM
+    };
+    
+    await db.collection(COLLECTIONS.AI_USAGE).doc(usageId).set(usageLog);
+    
+    logger.debug('Usage IA fonctionnalité enregistré', { userId, featureType, usageId });
+  } catch (error) {
+    logger.error('Erreur enregistrement usage IA fonctionnalité:', error);
+    // Ne pas faire échouer l'opération principale
+  }
+}
+
+/**
+ * Obtenir les recommandations de mise à niveau
+ */
+static async getUpgradeRecommendations(userId: string): Promise<{
+  shouldUpgrade: boolean;
+  currentPlan: string;
+  recommendedPlan: string;
+  reasons: string[];
+  blockedFeatures: string[];
+  savings?: number;
+}> {
+  try {
+    const subscription = await this.getActiveUserSubscription(userId);
+    const currentPlan = subscription?.plan || 'free';
+    
+    // Analyser l'usage des 30 derniers jours
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    
+    const [cvCount, aiUsage, templateUsage] = await Promise.all([
+      // Compter les CV créés
+      db.collection(COLLECTIONS.CVS)
+        .where('userId', '==', userId)
+        .where('createdAt', '>=', thirtyDaysAgo)
+        .get(),
+      
+      // Compter l'usage IA
+      db.collection(COLLECTIONS.AI_USAGE)
+        .where('userId', '==', userId)
+        .where('createdAt', '>=', thirtyDaysAgo)
+        .get(),
+      
+      // Compter l'usage des templates
+      db.collection(COLLECTIONS.TEMPLATE_INSTANCES)
+        .where('userId', '==', userId)
+        .where('createdAt', '>=', thirtyDaysAgo)
+        .get()
+    ]);
+    
+    const reasons: string[] = [];
+    const blockedFeatures: string[] = [];
+    let recommendedPlan = currentPlan;
+    
+    // Analyser les besoins selon l'usage
+    if (currentPlan === 'free') {
+      if (cvCount.size >= 2) {
+        reasons.push('Vous avez atteint la limite de CV gratuits');
+        blockedFeatures.push('Création de CV supplémentaires');
+      }
+      
+      if (aiUsage.size > 0) {
+        reasons.push('Vous pourriez bénéficier de la génération IA');
+        blockedFeatures.push('Génération IA de contenu');
+      }
+      if(templateUsage.size > 15 ){
+       // TOOD:
+      }
+      
+      recommendedPlan = 'basic';
+    }
+    
+    if (currentPlan === 'basic') {
+      if (cvCount.size >= 4) {
+        reasons.push('Vous approchez de la limite de CV');
+        recommendedPlan = 'pro';
+      }
+      
+      if (aiUsage.size >= 8) {
+        reasons.push('Usage intensif de l\'IA détecté');
+        recommendedPlan = 'pro';
+      }
+      
+      // Vérifier les tentatives d'accès aux fonctionnalités premium
+      const premiumAttempts = await db.collection('feature_attempts')
+        .where('userId', '==', userId)
+        .where('blocked', '==', true)
+        .where('createdAt', '>=', thirtyDaysAgo)
+        .get();
+      
+      if (premiumAttempts.size > 3) {
+        reasons.push('Tentatives fréquentes d\'accès aux fonctionnalités premium');
+        blockedFeatures.push('Templates premium', 'Analyse avancée de CV');
+        recommendedPlan = 'pro';
+      }
+    }
+    
+    if (currentPlan === 'pro') {
+      if (aiUsage.size >= 25) {
+        reasons.push('Usage très intensif de l\'IA');
+        recommendedPlan = 'premium';
+      }
+      
+      if (cvCount.size >= 12) {
+        reasons.push('Création intensive de CV');
+        recommendedPlan = 'premium';
+      }
+    }
+    
+    // Calculer les économies potentielles pour lifetime
+    let savings = 0;
+    if (recommendedPlan === 'premium' && currentPlan !== 'lifetime') {
+      const monthlyPrice = 39.99; // Prix premium mensuel
+      const lifetimePrice = 799.99; // Prix lifetime
+      //const breakEvenMonths = Math.ceil(lifetimePrice / monthlyPrice);
+      savings = (monthlyPrice * 24) - lifetimePrice; // Économies sur 2 ans
+    }
+    
+    return {
+      shouldUpgrade: recommendedPlan !== currentPlan,
+      currentPlan,
+      recommendedPlan,
+      reasons,
+      blockedFeatures,
+      savings: savings > 0 ? savings : undefined
+    };
+  } catch (error) {
+    logger.error('Erreur calcul recommandations mise à niveau:', error);
+    throw new AppError('Erreur lors du calcul des recommandations', 500);
+  }
+}
+
+/**
+ * Vérifier la compatibilité d'une fonctionnalité avec le plan actuel
+ */
+static async isFeatureAvailable(
+  userId: string,
+  feature: string
+): Promise<{
+  available: boolean;
+  planRequired?: string;
+  currentPlan: string;
+}> {
+  try {
+    const subscription = await this.getActiveUserSubscription(userId);
+    const currentPlan = subscription?.plan || 'free';
+    
+    // Mapping des fonctionnalités par plan
+    const featureRequirements = {
+      'cv_creation_unlimited': 'basic',
+      'ai_generation': 'basic',
+      'premium_templates': 'pro',
+      'cv_analysis': 'basic',
+      'job_matching': 'pro',
+      'advanced_exports': 'pro',
+      'unlimited_ai': 'premium',
+      'priority_support': 'pro',
+      'vip_support': 'premium',
+      'custom_branding': 'premium',
+      'api_access': 'premium'
+    };
+    
+    const requiredPlan = featureRequirements[feature as keyof typeof featureRequirements];
+    
+    if (!requiredPlan) {
+      // Fonctionnalité non reconnue, considérée comme disponible
+      return {
+        available: true,
+        currentPlan
+      };
+    }
+    
+    // Hiérarchie des plans
+    const planHierarchy = {
+      free: 0,
+      basic: 1,
+      pro: 2,
+      premium: 3,
+      lifetime: 3
+    };
+    
+    const currentLevel = planHierarchy[currentPlan as keyof typeof planHierarchy] || 0;
+    const requiredLevel = planHierarchy[requiredPlan as keyof typeof planHierarchy] || 0;
+    
+    return {
+      available: currentLevel >= requiredLevel,
+      planRequired: currentLevel < requiredLevel ? requiredPlan : undefined,
+      currentPlan
+    };
+  } catch (error) {
+    logger.error('Erreur vérification disponibilité fonctionnalité:', error);
+    return {
+      available: false,
+      currentPlan: 'free'
+    };
+  }
+}
+
+/**
+ * Calculer les statistiques d'utilisation pour la facturation
+ */
+static async calculateUsageStats(userId: string, period: 'current_month' | 'last_month' | 'last_3_months' = 'current_month'): Promise<{
+  cvCreated: number;
+  aiGenerations: number;
+  templatesUsed: number;
+  exportsGenerated: number;
+  analysisPerformed: number;
+  jobMatchings: number;
+  totalCost: number;
+  period: string;
+}> {
+  try {
+    let startDate: Date;
+    let endDate: Date = new Date();
+    
+    const now = new Date();
+    switch (period) {
+      case 'current_month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'last_month':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+        break;
+      case 'last_3_months':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        break;
+    }
+    
+    const [cvs, aiUsage, templates, exports, analysis, matchings] = await Promise.all([
+      db.collection(COLLECTIONS.CVS)
+        .where('userId', '==', userId)
+        .where('createdAt', '>=', startDate)
+        .where('createdAt', '<=', endDate)
+        .get(),
+      
+      db.collection(COLLECTIONS.AI_USAGE)
+        .where('userId', '==', userId)
+        .where('createdAt', '>=', startDate)
+        .where('createdAt', '<=', endDate)
+        .get(),
+      
+      db.collection(COLLECTIONS.TEMPLATE_INSTANCES)
+        .where('userId', '==', userId)
+        .where('createdAt', '>=', startDate)
+        .where('createdAt', '<=', endDate)
+        .get(),
+      
+      db.collection(COLLECTIONS.CV_EXPORTS)
+        .where('userId', '==', userId)
+        .where('createdAt', '>=', startDate)
+        .where('createdAt', '<=', endDate)
+        .get(),
+      
+      db.collection(COLLECTIONS.CV_ANALYSIS)
+        .where('userId', '==', userId)
+        .where('createdAt', '>=', startDate)
+        .where('createdAt', '<=', endDate)
+        .get(),
+      
+      db.collection(COLLECTIONS.CV_MATCHING)
+        .where('userId', '==', userId)
+        .where('createdAt', '>=', startDate)
+        .where('createdAt', '<=', endDate)
+        .get()
+    ]);
+    
+    // Calculer le coût total basé sur l'usage IA
+    const totalCost = aiUsage.docs.reduce((sum, doc) => {
+      const data = doc.data();
+      return sum + (data.cost || 0);
+    }, 0);
+    
+    return {
+      cvCreated: cvs.size,
+      aiGenerations: aiUsage.size,
+      templatesUsed: templates.size,
+      exportsGenerated: exports.size,
+      analysisPerformed: analysis.size,
+      jobMatchings: matchings.size,
+      totalCost: Math.round(totalCost * 100) / 100, // Arrondir à 2 décimales
+      period
+    };
+  } catch (error) {
+    logger.error('Erreur calcul statistiques usage:', error);
+    throw new AppError('Erreur lors du calcul des statistiques d\'usage', 500);
+  }
+}
+
+/**
+ * Vérifier et réinitialiser les quotas mensuels
+ */
+static async resetMonthlyQuotas(userId: string): Promise<void> {
+  try {
+    const subscription = await this.getActiveUserSubscription(userId);
+    if (!subscription) return;
+    
+    const now = new Date();
+    const lastReset = subscription.aiUsageReset || subscription.createdAt;
+    
+    // Vérifier si on est dans un nouveau mois
+    if (lastReset && 
+        (lastReset.getMonth() !== now.getMonth() || lastReset.getFullYear() !== now.getFullYear())) {
+      
+      // Réinitialiser les compteurs mensuels
+      await this.subscriptionCollection.doc(subscription.id).update({
+        aiUsageCount: 0,
+        aiUsageReset: this.getNextMonthDate(now),
+        updatedAt: now
+      });
+      
+      logger.info('Quotas mensuels réinitialisés', {
+        userId,
+        subscriptionId: subscription.id,
+        resetDate: this.getNextMonthDate(now)
+      });
+    }
+  } catch (error) {
+    logger.error('Erreur réinitialisation quotas mensuels:', error);
+    // Ne pas faire échouer l'opération
+  }
+}
+
+/**
+ * Obtenir les limites détaillées pour tous les types de fonctionnalités
+ */
+static async getAllFeatureLimits(userId: string): Promise<{
+  cvs: { current: number; limit: number; canCreate: boolean };
+  aiGeneration: { current: number; limit: number | null; canUse: boolean };
+  templates: { premiumAccess: boolean; currentUsage: number };
+  exports: { current: number; limit: number | null; canExport: boolean };
+  analysis: { current: number; limit: number | null; canAnalyze: boolean };
+  jobMatching: { current: number; limit: number | null; canMatch: boolean };
+  plan: string;
+  upgradeRecommended: boolean;
+}> {
+  try {
+    const subscription = await this.getActiveUserSubscription(userId);
+    const plan = subscription?.plan || 'free';
+    
+    // Obtenir toutes les limites en parallèle
+    const [
+      cvLimits,
+      aiLimits,
+      templateAccess,
+      exportLimits,
+      analysisLimits,
+      matchingLimits
+    ] = await Promise.all([
+      this.checkFeatureLimit(userId, 'cv_creation'),
+      this.checkAIUsageLimit(userId),
+      this.checkFeatureLimit(userId, 'template_premium'),
+      this.checkFeatureLimit(userId, 'export_advanced'),
+      this.checkFeatureLimit(userId, 'ai_analysis'),
+      this.checkFeatureLimit(userId, 'job_matching')
+    ]);
+    
+    // Compter l'usage actuel des templates
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    const templateUsage = await db.collection(COLLECTIONS.TEMPLATE_INSTANCES)
+      .where('userId', '==', userId)
+      .where('createdAt', '>=', new Date(currentMonth + '-01'))
+      .get();
+    
+    // Déterminer si une mise à niveau est recommandée
+    const upgradeRecommended = 
+      !cvLimits.canUse || 
+      !aiLimits.canUse || 
+      (!templateAccess.canUse && templateUsage.size > 0) ||
+      !analysisLimits.canUse ||
+      !matchingLimits.canUse;
+    
+    return {
+      cvs: {
+        current: cvLimits.currentUsage || 0,
+        limit: cvLimits.limit || 0,
+        canCreate: cvLimits.canUse
+      },
+      aiGeneration: {
+        current: aiLimits.currentUsage,
+        limit: aiLimits.limit,
+        canUse: aiLimits.canUse
+      },
+      templates: {
+        premiumAccess: templateAccess.canUse,
+        currentUsage: templateUsage.size
+      },
+      exports: {
+        current: exportLimits.currentUsage || 0,
+        limit: exportLimits.limit || null,
+        canExport: exportLimits.canUse
+      },
+      analysis: {
+        current: analysisLimits.currentUsage || 0,
+        limit: analysisLimits.limit || null,
+        canAnalyze: analysisLimits.canUse
+      },
+      jobMatching: {
+        current: matchingLimits.currentUsage || 0,
+        limit: matchingLimits.limit || null,
+        canMatch: matchingLimits.canUse
+      },
+      plan,
+      upgradeRecommended
+    };
+  } catch (error) {
+    logger.error('Erreur récupération limites fonctionnalités:', error);
+    throw new AppError('Erreur lors de la récupération des limites', 500);
+  }
+}
 }

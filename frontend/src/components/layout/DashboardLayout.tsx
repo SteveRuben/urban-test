@@ -76,6 +76,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       description: 'Vue d\'ensemble de vos lettres'
     },
     { 
+      name: 'Mes CV', 
+      href: '/dashboard/cv', 
+      icon: FaUser,
+      badge: null,
+      description: 'Créer et gérer vos CV'
+    },
+    { 
       name: 'Mes lettres', 
       href: '/dashboard/letters', 
       icon: FaFileAlt,
@@ -192,15 +199,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <Link to="/dashboard" className="flex items-center group">
             <div className="flex items-center">
               <div className="relative">
-                <div className="bg-gradient-to-br from-blue-600 to-purple-600 text-white p-2 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow">
+                <div className="bg-gradient-to-br from-purple-600 to-purple-700 text-white p-2 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow">
                   <FaFileAlt className="h-5 w-5" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border border-white flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border border-white flex items-center justify-center">
                   <span className="text-xs font-bold text-black text-[8px]">AI</span>
                 </div>
               </div>
               <div className="ml-3">
-                <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-emerald-600 bg-clip-text text-transparent">
                   MotivationLetter
                 </span>
                 <span className="text-sm font-semibold text-gray-800">.ai</span>
@@ -245,7 +252,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                     className={`
                       relative flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200
                       ${isActive
-                        ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 shadow-sm border border-blue-200'
+                        ? 'bg-gradient-to-r from-purple-50 to-emerald-50 text-purple-700 shadow-sm border border-purple-200'
                         : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                       }
                     `}
@@ -253,7 +260,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   >
                     <item.icon className={`
                       mr-3 h-5 w-5 flex-shrink-0 transition-colors
-                      ${isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'}
+                      ${isActive ? 'text-purple-600' : 'text-gray-400 group-hover:text-gray-500'}
                     `} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
@@ -276,7 +283,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                     </div>
                     
                     {isActive && (
-                      <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-l-full"></div>
+                      <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-purple-500 to-emerald-500 rounded-l-full"></div>
                     )}
                   </Link>
                 </div>
@@ -291,8 +298,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </h3>
             <div className="space-y-2">
               <Link
+                to="/dashboard/cv/new"
+                className="flex items-center px-3 py-2 text-sm text-white bg-gradient-to-r from-purple-600 to-emerald-600 rounded-lg hover:from-purple-700 hover:to-emerald-700 transition-all shadow-sm hover:shadow-md"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <FaUser className="mr-2 h-4 w-4" />
+                Nouveau CV
+              </Link>
+              <Link
                 to="/dashboard/letters/new"
-                className="flex items-center px-3 py-2 text-sm text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm hover:shadow-md"
+                className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 onClick={() => setSidebarOpen(false)}
               >
                 <FaRocket className="mr-2 h-4 w-4" />
@@ -494,8 +509,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   }}
                   className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  <div className="bg-gradient-to-br from-blue-100 to-purple-100 rounded-full p-2">
-                    <FaUser className="h-4 w-4 text-blue-600" />
+                  <div className="bg-gradient-to-br from-purple-100 to-emerald-100 rounded-full p-2">
+                    <FaUser className="h-4 w-4 text-purple-600" />
                   </div>
                   <div className="hidden md:block text-left">
                     <p className="text-sm font-medium text-gray-900">

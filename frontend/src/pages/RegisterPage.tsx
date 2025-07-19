@@ -240,10 +240,10 @@ const RegisterPage: React.FC = () => {
         description="Créez votre compte gratuit pour accéder à nos outils de création de lettres de motivation avec IA."
       />
       
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-emerald-50 to-amber-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background decoration */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl float-animation"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl float-animation" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl float-animation"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl float-animation" style={{animationDelay: '2s'}}></div>
         
         <LazySection animationType="slideUp">
           <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -251,10 +251,10 @@ const RegisterPage: React.FC = () => {
               <div className="relative">
                 <div className="p-4 bg-white rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105 card-hover-premium">
                   <div className="relative">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
                       ML
                     </div>
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full border-2 border-white flex items-center justify-center">
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-amber-400 rounded-full border-2 border-white flex items-center justify-center">
                       <span className="text-xs font-bold text-black">AI</span>
                     </div>
                   </div>
@@ -270,7 +270,7 @@ const RegisterPage: React.FC = () => {
                 Créez votre compte gratuitement
               </p>
               {selectedPlan && (
-                <div className="inline-flex items-center bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                <div className="inline-flex items-center bg-gradient-to-r from-purple-100 to-emerald-100 text-purple-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
                   <FaCrown className="mr-2" />
                   Plan {selectedPlan} sélectionné
                 </div>
@@ -317,7 +317,7 @@ const RegisterPage: React.FC = () => {
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <FaUser className={`h-5 w-5 transition-colors ${
                       validationErrors.name ? 'text-red-400' : 
-                      formData.name ? 'text-blue-500' : 'text-gray-400'
+                      formData.name ? 'text-purple-500' : 'text-gray-400'
                     }`} />
                   </div>
                   <input
@@ -331,8 +331,8 @@ const RegisterPage: React.FC = () => {
                       validationErrors.name 
                         ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
                         : formData.name 
-                          ? 'border-blue-300 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/50'
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-white'
+                          ? 'border-purple-300 focus:ring-purple-500 focus:border-purple-500 bg-purple-50/50'
+                          : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500 bg-white'
                     } focus:outline-none focus:ring-2 focus:ring-offset-1 placeholder-gray-400`}
                     placeholder="Votre nom complet"
                     disabled={isLoading}
@@ -357,7 +357,7 @@ const RegisterPage: React.FC = () => {
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <FaEnvelope className={`h-5 w-5 transition-colors ${
                       validationErrors.email ? 'text-red-400' : 
-                      formData.email ? 'text-blue-500' : 'text-gray-400'
+                      formData.email ? 'text-emerald-500' : 'text-gray-400'
                     }`} />
                   </div>
                   <input
@@ -371,8 +371,8 @@ const RegisterPage: React.FC = () => {
                       validationErrors.email 
                         ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
                         : formData.email 
-                          ? 'border-blue-300 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/50'
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-white'
+                          ? 'border-emerald-300 focus:ring-emerald-500 focus:border-emerald-500 bg-emerald-50/50'
+                          : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500 bg-white'
                     } focus:outline-none focus:ring-2 focus:ring-offset-1 placeholder-gray-400`}
                     placeholder="votre@email.com"
                     disabled={isLoading}
@@ -539,7 +539,7 @@ const RegisterPage: React.FC = () => {
               <div>
                 <button
                   type="submit"
-                  className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 transform hover:scale-[1.02] btn-premium ${
+                  className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 transform hover:scale-[1.02] btn-premium ${
                     isLoading ? 'opacity-70 cursor-not-allowed' : ''
                   }`}
                   disabled={isLoading}

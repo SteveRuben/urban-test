@@ -138,10 +138,34 @@ class LetterService {
   async exportLetter(id: string, options: ExportOptions): Promise<Blob> {
     try {
       const response = await api.post(`/letters/${id}/export`, {
-        body: {options},
-        responseType: 'blob'
+        body: options
       });
-      return response.data;
+      const binaryString = window.atob(response.data.data.blob);
+
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      let mimeType: string;
+      switch (options.format) {
+        case 'pdf':
+          mimeType = 'application/pdf';
+          break;
+        case 'docx':
+          mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          break;
+        case 'txt':
+          mimeType = 'text/plain';
+          break;
+        case 'html':
+          mimeType = 'text/html';
+          break;
+        default:
+          mimeType = 'application/octet-stream';
+      }
+      const blob = new Blob([bytes.buffer], { type: mimeType });
+      return blob;//response.data.data.blob;
     } catch (error) {
       console.error(`Error exporting letter ${id} as ${options}:`, error);
       throw this.handleError(error);
@@ -156,7 +180,7 @@ class LetterService {
       // Erreur avec réponse du serveur
       const status = error.response.status;
       const message = error.response.data?.error || 'Une erreur est survenue';
-      
+
       switch (status) {
         case 400:
           return new Error('Requête invalide: ' + message);
@@ -186,7 +210,7 @@ class LetterService {
     await api.post(`/letters/${letterId}/increment-views`);
   }
 
-  async createShareLink (letterId: string, options: ShareOptions): Promise<{ url: string }>  {
+  async createShareLink(letterId: string, options: ShareOptions): Promise<{ url: string }> {
     // Mock implementation or actual API call
     return Promise.resolve({ url: `https://example.com/share/${letterId}?options=${JSON.stringify(options)}` });
   }

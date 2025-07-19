@@ -1,6 +1,8 @@
 // src/services/template.service.ts
 import { db, COLLECTIONS } from '../config/firebase';
+import { CVRegion } from '../models/cv.model';
 import { LetterTemplate, LetterType } from '../models/letter.model';
+import { Template, TemplateCategory, TemplateType, TemplateVariable, ValidationResult } from '../models/template.model';
 import { NotFoundError, ValidationError, ForbiddenError } from '../utils/errors.util';
 import { ValidationUtil } from '../utils/validation.util';
 import { SubscriptionService } from './subscription.service';
@@ -518,5 +520,196 @@ export class TemplateService {
     if (!premiumFeatures.includes(feature)) return true;
     
     return ['pro', 'premium'].includes(subscription.plan);
+  }
+
+   /**
+   * Générer le contenu d'un template avec les variables utilisateur
+   */
+  static generateContent(template: Template, variableValues: Record<string, any>): string {
+    let content = '';
+    
+    template.sections
+      .sort((a, b) => a.order - b.order)
+      .forEach(section => {
+        let sectionContent = section.content;
+        
+        // Remplacer les variables globales
+        template.globalVariables.forEach(variable => {
+          const value = variableValues[variable.name] || variable.defaultValue || '';
+          sectionContent = sectionContent.replace(
+            new RegExp(`{{${variable.name}}}`, 'g'),
+            Array.isArray(value) ? value.join(', ') : value
+          );
+        });
+        
+        // Remplacer les variables de section
+        section.variables.forEach(variable => {
+          const value = variableValues[variable.name] || variable.defaultValue || '';
+          sectionContent = sectionContent.replace(
+            new RegExp(`{{${variable.name}}}`, 'g'),
+            Array.isArray(value) ? value.join(', ') : value
+          );
+        });
+        
+        content += sectionContent + '\n\n';
+      });
+    
+    return content.trim();
+  }
+  
+  /**
+   * Valider les données d'entrée d'un template
+   */
+  static validateTemplateData(template: Template, variableValues: Record<string, any>): ValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    
+    // Vérifier les variables globales
+    template.globalVariables.forEach(variable => {
+      if (variable.required && !variableValues[variable.name]) {
+        errors.push(`Le champ "${variable.label}" est requis`);
+      }
+      
+      if (variableValues[variable.name] && variable.validation) {
+        const value = variableValues[variable.name];
+        const validation = variable.validation;
+        
+        if (typeof value === 'string') {
+          if (validation.minLength && value.length < validation.minLength) {
+            errors.push(`"${variable.label}" doit contenir au moins ${validation.minLength} caractères`);
+          }
+          if (validation.maxLength && value.length > validation.maxLength) {
+            errors.push(`"${variable.label}" ne peut pas dépasser ${validation.maxLength} caractères`);
+          }
+          if (validation.pattern && !new RegExp(validation.pattern).test(value)) {
+            errors.push(`"${variable.label}" ne respecte pas le format attendu`);
+          }
+        }
+        
+        if (typeof value === 'number') {
+          if (validation.min !== undefined && value < validation.min) {
+            errors.push(`"${variable.label}" doit être supérieur ou égal à ${validation.min}`);
+          }
+          if (validation.max !== undefined && value > validation.max) {
+            errors.push(`"${variable.label}" doit être inférieur ou égal à ${validation.max}`);
+          }
+        }
+      }
+    });
+    
+    // Vérifier les variables de sections
+    template.sections.forEach(section => {
+      section.variables.forEach(variable => {
+        if (variable.required && !variableValues[variable.name]) {
+          errors.push(`Le champ "${variable.label}" (section ${section.name}) est requis`);
+        }
+      });
+    });
+    
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings
+    };
+  }
+  
+  /**
+   * Extraire toutes les variables d'un template
+   */
+  static extractAllVariables(template: Template): TemplateVariable[] {
+    const variables = [...template.globalVariables];
+    
+    template.sections.forEach(section => {
+      variables.push(...section.variables);
+    });
+    
+    return variables;
+  }
+  
+  /**
+   * Rechercher des templates par critères
+   */
+  static searchTemplates(
+    templates: Template[],
+    filters: {
+      type?: TemplateType;
+      category?: TemplateCategory;
+      industry?: string;
+      experienceLevel?: string;
+      isPremium?: boolean;
+      region?: CVRegion;
+      keywords?: string[];
+    }
+  ): Template[] {
+    return templates.filter(template => {
+      if (filters.type && template.type !== filters.type) return false;
+      if (filters.category && template.category !== filters.category) return false;
+      if (filters.industry && !template.industry.includes(filters.industry)) return false;
+      if (filters.experienceLevel && template.experienceLevel !== 'any' && template.experienceLevel !== filters.experienceLevel) return false;
+      if (filters.isPremium !== undefined && template.isPremium !== filters.isPremium) return false;
+      if (filters.region && template.regions && !template.regions.includes(filters.region)) return false;
+      
+      if (filters.keywords && filters.keywords.length > 0) {
+        const templateText = `${template.name} ${template.description} ${template.tags.join(' ')} ${template.keywords.join(' ')}`.toLowerCase();
+        const hasKeyword = filters.keywords.some(keyword => 
+          templateText.includes(keyword.toLowerCase())
+        );
+        if (!hasKeyword) return false;
+      }
+      
+      return true;
+    });
+  }
+  
+  /**
+   * Recommander des templates basés sur le profil utilisateur
+   */
+  static recommendTemplates(
+    templates: Template[],
+    userProfile: {
+      industry?: string;
+      experienceLevel?: string;
+      previousTemplates?: string[];
+      subscription?: string;
+    }
+  ): Template[] {
+    let scored = templates.map(template => {
+      let score = 0;
+      
+      // Score basé sur l'industrie
+      if (userProfile.industry && template.industry.includes(userProfile.industry)) {
+        score += 10;
+      }
+      
+      // Score basé sur l'expérience
+      if (userProfile.experienceLevel && 
+          (template.experienceLevel === userProfile.experienceLevel || template.experienceLevel === 'any')) {
+        score += 8;
+      }
+      
+      // Popularité
+      score += Math.min(template.usageCount / 100, 5);
+      
+      // Note
+      score += template.rating;
+      
+      // Éviter les templates déjà utilisés récemment
+      if (userProfile.previousTemplates?.includes(template.id)) {
+        score -= 3;
+      }
+      
+      // Templates premium si abonnement
+      if (template.isPremium && userProfile.subscription === 'free') {
+        score = 0; // Exclure si pas d'abonnement
+      }
+      
+      return { template, score };
+    });
+    
+    return scored
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10)
+      .map(item => item.template);
   }
 }

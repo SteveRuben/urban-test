@@ -96,8 +96,13 @@ const LetterEditorPage: React.FC = () => {
 
       try {
         const response = await api.get(`/letters/${id}`);
-        const letter = response.data.data;
-        
+        const letter = response.data;
+        const serverContent = letter.content || '';
+        if (formData.content && formData.content !== serverContent && formData.content.length > 0) {
+         
+            return; // Ne pas écraser les données locales
+          
+        }
         setFormData({
           title: letter.title || '',
           company: letter.company || '',
@@ -143,6 +148,30 @@ const LetterEditorPage: React.FC = () => {
     const { name, value } = e.target;
     setUserProfile(prev => ({ ...prev, [name]: value }));
   };
+
+  const downloadLetter = async () => {
+    const response = await api.get(`/letters/${id}/export?format=pdf`);
+    if(response.data.data.blob){
+      const binaryString = window.atob(response.data.data.blob);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for(let i=0; i < len; i++){
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes.buffer],{type:'application/pdf'});
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url;
+      a.download = `${response.data.data.letter.title}.pdf`;
+
+      document.body.appendChild(a);
+      a.click();
+      document.removeChild(a);
+
+      window.URL.revokeObjectURL(url);
+    }
+  }
 
   const handleSave = async (asFinal: boolean = false) => {
     setIsSaving(true);
@@ -369,9 +398,7 @@ const LetterEditorPage: React.FC = () => {
                 variant="primary"
                 size="md"
                 leftIcon={<FaDownload />}
-                onClick={() => {
-                  window.open(`/api/v1/letters/${id}/export?format=pdf`, '_blank');
-                }}
+                onClick={downloadLetter}
                 disabled={isNewLetter}
               >
                 Télécharger en PDF

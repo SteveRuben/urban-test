@@ -383,9 +383,9 @@ export const api = onRequest({
 export { app };
 
 // Log de démarrage
-logger.info('🚀 Motivation Letter AI API démarrée', {
+/*logger.info('🚀 Motivation Letter AI API démarrée', {
   environment: CONFIG.ENVIRONMENT,
   region: CONFIG.REGION,
   version: '1.0.0',
   timestamp: new Date().toISOString()
-});
+});*/

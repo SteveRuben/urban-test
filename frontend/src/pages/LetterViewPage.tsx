@@ -305,7 +305,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, is
                   className="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <div>
-                  <div className="font-medium text-gray-800">Filigrane TactiqCV</div>
+                  <div className="font-medium text-gray-800">Filigrane motivationletter.ai</div>
                   <div className="text-xs text-gray-500">Ajouter un filigrane discret</div>
                 </div>
               </label>
@@ -501,7 +501,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, onShare, isLoa
               <span className="text-sm font-medium text-gray-700">Aperçu du lien</span>
             </div>
             <div className="text-xs text-gray-600 break-all font-mono bg-white p-2 rounded border">
-              https://tactiqcv.com/letters/shared/{letter?.id || 'xxx'}?preview={options.includePreview ? 'true' : 'false'}
+              https://motivationletter.ai/letters/shared/{letter?.id || 'xxx'}?preview={options.includePreview ? 'true' : 'false'}
             </div>
           </div>
         </div>
@@ -970,7 +970,7 @@ const LetterViewPage: React.FC = () => {
 
     try {
       const blob = await letterService.exportLetter(letter.id, options);
-
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1305,7 +1305,7 @@ const LetterViewPage: React.FC = () => {
     <ErrorBoundary>
       <DashboardLayout>
         <MetaTags
-          title={`${letter.title} | TactiqCV`}
+          title={`${letter.title} | motivationletter.ai`}
           description={letter.content ? letter.content.substring(0, 160) + '...' : 'Lettre de motivation professionnelle'}
           keywords={`lettre motivation, ${letter.company}, ${letter.jobTitle}, candidature`}
         />

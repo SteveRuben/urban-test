@@ -5,7 +5,8 @@ import userRoutes from './user.routes';
 import letterRoutes from './letter.routes'; 
 import subscriptionRoutes from './subscription.routes'; 
 import paymentRoutes from './payment.routes'; 
-import aiRoutes from './ai.routes'; 
+import aiRoutes from './ai.routes';
+import cvRoutes from './cv.routes'; 
 import templateRoutes from './template.routes';
 import notificationRoutes from './notification.routes';
 import { CONFIG } from '../config/firebase';
@@ -20,6 +21,7 @@ router.use('/payments', paymentRoutes);
 router.use('/ai', aiRoutes);
 router.use('/templates', templateRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/cv',cvRoutes);
 
 router.get('/health2', (req, res) => {
   res.status(200).json({
@@ -46,7 +48,8 @@ router.get('/health', (req, res) => {
       templates: 'active',
       subscriptions: 'enabled',
       payments: 'enabled',
-      ai: 'enabled'
+      ai: 'enabled',
+      cv: 'enabled'
     },
     environment: process.env.NODE_ENV || 'development',
     integrations: {

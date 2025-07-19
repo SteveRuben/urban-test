@@ -43,8 +43,55 @@ export const COLLECTIONS = {
   LETTER_ANALYSES: 'letter_analyses',
   ANALYTICS: 'analytics',
   SETTINGS: 'settings',
-  NOTIFICATION : 'notifications'
+  NOTIFICATION : 'notifications',
+  CVS: 'cvs',
+  CV_TEMPLATES: 'cv_templates',
+  CV_ANALYSIS: 'cv_analysis',
+  CV_MATCHING: 'cv_matching',
+  CV_EXPORTS: 'cv_exports',
+  TEMPLATE_STATS: 'template_stats',
+  CV_STATS: 'cv_stats',
+  // Collections pour le système de templates avancé
+  ENHANCED_TEMPLATES: 'enhanced_templates',
+  TEMPLATE_INSTANCES: 'template_instances',
+  TEMPLATE_CATEGORIES: 'template_categories',
+  
+  // Collections pour l'IA
+  AI_REQUESTS: 'ai_requests',
+  AI_IMPROVEMENTS: 'ai_improvements',
+  // Collections pour les évaluations et reviews
+  CV_REVIEWS: 'cv_reviews',
+  
+  // Collections pour le partage et collaboration
+  SHARED_CVS: 'shared_cvs',
+  SHARED_TEMPLATES: 'shared_templates',
+  
+  // Collections pour les workflows
+  WORKFLOW_INSTANCES: 'workflow_instances',
+  JOB_APPLICATIONS: 'job_applications'
 } as const;
+
+export const NEW_COLLECTIONS = {
+  // Collections CV
+  CVS: 'cvs',
+  CV_TEMPLATES: 'cv_templates', 
+  CV_ANALYSIS: 'cv_analysis',
+  CV_MATCHING: 'cv_matching',
+  CV_EXPORTS: 'cv_exports',
+  
+  // Collections Templates avancés
+  ENHANCED_TEMPLATES: 'enhanced_templates',
+  TEMPLATE_INSTANCES: 'template_instances',
+  
+  // Collections IA
+  AI_REQUESTS: 'ai_requests',
+  AI_IMPROVEMENTS: 'ai_improvements',
+  
+  // Collections Analytics
+  USER_STATS: 'user_stats',
+  CV_STATS: 'cv_stats',
+  TEMPLATE_STATS: 'template_stats'
+};
 
 // Configuration des endpoints API
 export const API_ENDPOINTS = {
@@ -319,7 +366,8 @@ export const validateConfig = (): boolean => {
 validateConfig();
 
 // Types TypeScript pour une meilleure sécurité
-export type CollectionName = keyof typeof COLLECTIONS;
+export type CollectionName = typeof COLLECTIONS[keyof typeof COLLECTIONS]; //keyof typeof COLLECTIONS;
 export type SubscriptionPlan = keyof typeof SUBSCRIPTION_PLANS;
 export type TemplateId = keyof typeof DEFAULT_TEMPLATES;
 export type SupportedLanguage = typeof CONFIG.SUPPORTED_LANGUAGES[number];
+

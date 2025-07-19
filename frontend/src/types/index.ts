@@ -5,6 +5,7 @@
 export * from './env.types';
 export * from './auth.types';
 export * from './letter.types';
+export * from './cv.types';
 export * from './subscription.types';
 export * from './payment.types';
 export * from './ui.types';

@@ -145,22 +145,31 @@ const LettersPage: React.FC = () => {
     try {
       const response = await api.get(`/letters/${id}/export`, {
         params: { format: 'pdf' },
-        responseType: 'blob'
       });
-
+     
       // Créer un lien pour télécharger le fichier
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `lettre-de-motivation-${id}.pdf`);
-      document.body.appendChild(link);
-      link.click();
+      if (response.data.data.blob) {
+        const binaryString = window.atob(response.data.data.blob);
+        
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes.buffer], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `lettre-de-motivation-${id}.pdf`);
+        document.body.appendChild(link);
+        link.click();
 
-      // Nettoyer
-      if (link.parentNode) {
-        link.parentNode.removeChild(link);
+        // Nettoyer
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+        window.URL.revokeObjectURL(url);
       }
-      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Erreur lors du téléchargement de la lettre:', err);
       alert('Erreur lors du téléchargement de la lettre. Veuillez réessayer plus tard.');
@@ -244,8 +253,8 @@ const LettersPage: React.FC = () => {
                   </div>
                   <button
                     className={`flex items-center w-full px-3 py-2 text-left text-sm ${filterStatus === 'all'
-                        ? 'text-blue-600 bg-blue-50'
-                        : 'text-gray-700 hover:bg-gray-50'
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     onClick={() => setFilterStatus('all')}
                   >
@@ -253,8 +262,8 @@ const LettersPage: React.FC = () => {
                   </button>
                   <button
                     className={`flex items-center w-full px-3 py-2 text-left text-sm ${filterStatus === 'draft'
-                        ? 'text-blue-600 bg-blue-50'
-                        : 'text-gray-700 hover:bg-gray-50'
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     onClick={() => setFilterStatus('draft')}
                   >
@@ -263,8 +272,8 @@ const LettersPage: React.FC = () => {
                   </button>
                   <button
                     className={`flex items-center w-full px-3 py-2 text-left text-sm ${filterStatus === 'final'
-                        ? 'text-blue-600 bg-blue-50'
-                        : 'text-gray-700 hover:bg-gray-50'
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     onClick={() => setFilterStatus('final')}
                   >
@@ -377,8 +386,8 @@ const LettersPage: React.FC = () => {
                       </td>
                       <td className="py-4 px-6 border-b border-gray-200 text-sm text-center">
                         <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${letter.status === 'final'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-yellow-100 text-yellow-700'
                           }`}>
                           {letter.status === 'final' ? (
                             <>
