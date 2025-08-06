@@ -501,9 +501,9 @@ const CVViewPage: React.FC = () => {
                                             </a>
                                         )}
 
-                                        {currentCV.personalInfo.website && (
+                                        {(currentCV.personalInfo.website || currentCV.personalInfo.portfolio) && (
                                             <a
-                                                href={currentCV.personalInfo.website}
+                                                href={currentCV.personalInfo.website || currentCV.personalInfo.portfolio}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex items-center text-sm text-purple-600 hover:text-purple-700"
@@ -525,7 +525,12 @@ const CVViewPage: React.FC = () => {
                                 .filter(section => section.isVisible)
                                 .sort((a, b) => a.order - b.order)
                                 .map((section) => (
-                                    <CVSection key={section.sectionId} section={section} />
+                                    <CVSection 
+                                        key={section.sectionId} 
+                                        section={section} 
+                                        getSkillLevelText={getSkillLevelText}
+                                        getSkillLevelColor={getSkillLevelColor}
+                                    />
                                 ))}
                         </div>
                     </div>
@@ -558,7 +563,11 @@ const CVViewPage: React.FC = () => {
 };
 
 // Composant pour afficher une section du CV
-const CVSection: React.FC<{ section: any }> = ({ section }) => {
+const CVSection: React.FC<{ 
+    section: any;
+    getSkillLevelText: (level: number) => string;
+    getSkillLevelColor: (level: number) => string;
+}> = ({ section, getSkillLevelText, getSkillLevelColor }) => {
     const getSectionIcon = (type: CVSectionType) => {
         const icons = {
             [CVSectionType.WORK_EXPERIENCE]: FaBriefcase,
@@ -580,7 +589,6 @@ const CVSection: React.FC<{ section: any }> = ({ section }) => {
     const Icon = getSectionIcon(section.type);
 
     return (
-        <DashboardLayout>
         <div className="border-l-4 border-blue-500 pl-6">
             <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <Icon className="mr-3 text-blue-600" />
@@ -699,6 +707,13 @@ const CVSection: React.FC<{ section: any }> = ({ section }) => {
                                 <p className="text-gray-700 text-sm">{edu.coursework.join(', ')}</p>
                             </div>
                         )}
+
+                        {edu.thesis && (
+                            <div className="mt-2">
+                                <h4 className="font-medium text-gray-800 mb-1">Thèse/Mémoire :</h4>
+                                <p className="text-gray-700 text-sm italic">{edu.thesis}</p>
+                            </div>
+                        )}
                     </div>
                 ))}
 
@@ -709,7 +724,11 @@ const CVSection: React.FC<{ section: any }> = ({ section }) => {
                             <div key={index} className="bg-gray-50 rounded-lg p-4">
                                 <div className="flex justify-between items-center mb-2">
                                     <h3 className="font-medium text-gray-900">{skill.name}</h3>
-                                    <span className="text-sm text-gray-500 capitalize">{skill.category}</span>
+                                    <span className="text-sm text-gray-500 capitalize">
+                                        {skill.category === 'technical' ? 'Technique' :
+                                         skill.category === 'soft' ? 'Relationnel' :
+                                         skill.category === 'language' ? 'Langue' : skill.category}
+                                    </span>
                                 </div>
 
                                 <div className="flex items-center space-x-2 mb-2">
@@ -835,16 +854,18 @@ const CVSection: React.FC<{ section: any }> = ({ section }) => {
                             </div>
                         )}
 
-                        <div className="flex flex-wrap gap-2 mb-3">
-                            {project.technologies.map((tech, index) => (
-                                <span
-                                    key={index}
-                                    className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
-                                >
-                                    {tech}
-                                </span>
-                            ))}
-                        </div>
+                        {project.technologies.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                {project.technologies.map((tech, index) => (
+                                    <span
+                                        key={index}
+                                        className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                                    >
+                                        {tech}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
                         <div className="flex space-x-4">
                             {project.url && (
@@ -888,20 +909,7 @@ const CVSection: React.FC<{ section: any }> = ({ section }) => {
                 )}
             </div>
         </div>
-        </DashboardLayout>
     );
-};
-
-// Fonction utilitaire pour obtenir la couleur du niveau de compétence
-const getSkillLevelColor = (level: number) => {
-    const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
-    return colors[level - 1] || 'bg-gray-500';
-};
-
-// Fonction utilitaire pour obtenir le texte du niveau de compétence
-const getSkillLevelText = (level: number) => {
-    const levels = ['Débutant', 'Novice', 'Intermédiaire', 'Avancé', 'Expert'];
-    return levels[level - 1] || 'Non défini';
 };
 
 export default CVViewPage;
