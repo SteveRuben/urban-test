@@ -454,6 +454,15 @@ export class CVService {
   // ==========================================
   // MÉTHODES PRIVÉES
   // ==========================================
+  private static getYearFromDate(date: Date | string | undefined | null): string {
+    if (!date) return 'présent';
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      return dateObj.getFullYear().toString();
+    } catch {
+      return 'N/A';
+    }
+  }
 
   private static async getUserCVCount(userId: string): Promise<number> {
     const snapshot = await this.collection.where('userId', '==', userId).get();
@@ -487,6 +496,13 @@ export class CVService {
         doc.on('data', (chunk) => chunks.push(chunk));
         doc.on('end', () => resolve(Buffer.concat(chunks)));
 
+        const formatDateRange = (startDate: Date | string, endDate?: Date | string | null, isCurrent?: boolean): string => {
+          const start = this.getYearFromDate(startDate);
+          if (isCurrent) return `${start} - présent`;
+          const end = this.getYearFromDate(endDate);
+          return `${start} - ${end}`;
+        };
+
         // En-tête avec informations personnelles
         doc.fontSize(20).text(`${cv.personalInfo.firstName} ${cv.personalInfo.lastName}`, {
           align: 'center'
@@ -502,6 +518,19 @@ export class CVService {
           });
         }
 
+        // Liens professionnels
+        const links: string[] = [];
+
+        if (cv.personalInfo.linkedin) links.push(`LinkedIn: ${cv.personalInfo.linkedin}`);
+        if (cv.personalInfo.github) links.push(`GitHub: ${cv.personalInfo.github}`);
+        if (cv.personalInfo.portfolio || cv.personalInfo.website) {
+          links.push(`Portfolio: ${cv.personalInfo.portfolio || cv.personalInfo.website}`);
+        }
+
+        if (links.length > 0) {
+          doc.fontSize(10).text(links.join(' | '), { align: 'center' });
+        }
+
         doc.moveDown();
 
         // Résumé professionnel
@@ -511,45 +540,253 @@ export class CVService {
           doc.moveDown();
         }
 
-        // Sections du CV
-        cv.sections.forEach(section => {
+        // Trier et afficher les sections
+        const sortedSections = cv.sections
+          .filter(section => section.isVisible)
+          .sort((a, b) => a.order - b.order);
+
+        sortedSections.forEach(section => {
+          // Vérifier s'il y a assez d'espace pour le titre de section
+          if (doc.y > doc.page.height - 100) {
+            doc.addPage();
+          }
+
           doc.fontSize(14).text(section.title, { underline: true });
+          doc.moveDown(0.3);
           
-          // Contenu selon le type de section
-          if (section.content.workExperience) {
+          // Expérience professionnelle
+          if (section.content.workExperience && section.content.workExperience.length > 0) {
             section.content.workExperience.forEach(exp => {
-              doc.fontSize(12).text(`${exp.position} - ${exp.company}`, { continued: true });
-              doc.text(` (${exp.startDate.getFullYear()}-${exp.endDate?.getFullYear() || 'présent'})`, { align: 'right' });
-              doc.fontSize(10).text(exp.description);
-              doc.moveDown(0.5);
+              // Vérifier l'espace avant chaque expérience
+              if (doc.y > doc.page.height - 120) {
+                doc.addPage();
+              }
+
+              const dateRange = formatDateRange(exp.startDate, exp.endDate, exp.isCurrent);
+              
+              doc.fontSize(12).fillColor('black').text(`${exp.position}`, { continued: true });
+              doc.fontSize(10).fillColor('gray').text(` (${dateRange})`, { align: 'right' });
+              
+              doc.fontSize(11).fillColor('blue').text(`${exp.company}`, { continued: false });
+              
+              if (exp.location) {
+                doc.fontSize(10).fillColor('gray').text(`📍 ${exp.location}`);
+              }
+
+              if (exp.description) {
+                doc.fontSize(10).fillColor('black').text(exp.description);
+              }
+
+              // Réalisations
+              if (exp.achievements && exp.achievements.length > 0) {
+                doc.fontSize(10).fillColor('black').text('Réalisations :', { continued: false });
+                exp.achievements.forEach(achievement => {
+                  doc.fontSize(9).text(`• ${achievement}`, { indent: 15 });
+                });
+              }
+
+              // Technologies
+              if (exp.technologies && exp.technologies.length > 0) {
+                doc.fontSize(9).fillColor('gray').text(`Technologies: ${exp.technologies.join(', ')}`);
+              }
+
+              doc.moveDown(0.7);
             });
           }
 
-          if (section.content.education) {
+          // Formation
+          if (section.content.education && section.content.education.length > 0) {
             section.content.education.forEach(edu => {
-              doc.fontSize(12).text(`${edu.degree} - ${edu.institution}`, { continued: true });
-              doc.text(` (${edu.startDate.getFullYear()}-${edu.endDate?.getFullYear() || 'présent'})`, { align: 'right' });
-              doc.fontSize(10).text(`${edu.field}`);
+              if (doc.y > doc.page.height - 100) {
+                doc.addPage();
+              }
+
+              const dateRange = formatDateRange(edu.startDate, edu.endDate);
+              
+              doc.fontSize(12).fillColor('black').text(`${edu.degree}`, { continued: true });
+              doc.fontSize(10).fillColor('gray').text(` (${dateRange})`, { align: 'right' });
+              
+              doc.fontSize(11).fillColor('blue').text(`${edu.institution}`);
+              doc.fontSize(10).fillColor('black').text(`${edu.field}`);
+              
+              if (edu.location) {
+                doc.fontSize(10).fillColor('gray').text(`📍 ${edu.location}`);
+              }
+
+              if (edu.gpa) {
+                doc.fontSize(10).text(`GPA: ${edu.gpa}${edu.maxGpa ? `/${edu.maxGpa}` : ''}`);
+              }
+
+              // Distinctions
+              if (edu.honors && edu.honors.length > 0) {
+                doc.fontSize(9).fillColor('orange').text(`🏆 ${edu.honors.join(', ')}`);
+              }
+
+              // Cours pertinents
+              if (edu.coursework && edu.coursework.length > 0) {
+                doc.fontSize(9).fillColor('gray').text(`Cours: ${edu.coursework.join(', ')}`);
+              }
+
+              // Thèse
+              if (edu.thesis) {
+                doc.fontSize(9).fillColor('gray').text(`Thèse: ${edu.thesis}`);
+              }
+
+              doc.moveDown(0.7);
+            });
+          }
+
+          // Compétences
+          if (section.content.skills && section.content.skills.length > 0) {
+            const skillsByCategory = section.content.skills.reduce((acc, skill) => {
+              if (!acc[skill.category]) acc[skill.category] = [];
+              acc[skill.category].push(skill);
+              return acc;
+            }, {} as Record<string, typeof section.content.skills>);
+
+            Object.entries(skillsByCategory).forEach(([category, skills]) => {
+              const categoryNames = {
+                technical: 'Techniques',
+                soft: 'Relationnelles', 
+                language: 'Langues',
+                other: 'Autres'
+              };
+
+              doc.fontSize(11).fillColor('black').text(`${categoryNames[category] || category} :`);
+              
+              const skillsText = skills.map(skill => {
+                const levels = ['Débutant', 'Novice', 'Intermédiaire', 'Avancé', 'Expert'];
+                const levelText = levels[skill.level - 1] || 'N/A';
+                return `${skill.name} (${levelText})${skill.yearsOfExperience ? ` - ${skill.yearsOfExperience} ans` : ''}`;
+              }).join(', ');
+              
+              doc.fontSize(10).fillColor('gray').text(skillsText, { indent: 15 });
+              doc.moveDown(0.3);
+            });
+          }
+
+          // Langues
+          if (section.content.languages && section.content.languages.length > 0) {
+            const languagesText = section.content.languages.map(lang => {
+              let text = `${lang.name} (${lang.level})`;
+              if (lang.certifications && lang.certifications.length > 0) {
+                text += ` - ${lang.certifications.join(', ')}`;
+              }
+              return text;
+            }).join(', ');
+            
+            doc.fontSize(11).fillColor('black').text(languagesText);
+          }
+
+          // Certifications
+          if (section.content.certifications && section.content.certifications.length > 0) {
+            section.content.certifications.forEach(cert => {
+              if (doc.y > doc.page.height - 80) {
+                doc.addPage();
+              }
+
+              const issueYear = this.getYearFromDate(cert.issueDate);
+              const expiryInfo = cert.expiryDate ? ` (expire: ${this.getYearFromDate(cert.expiryDate)})` : '';
+              
+              doc.fontSize(11).fillColor('black').text(`${cert.name}`, { continued: true });
+              doc.fontSize(9).fillColor('gray').text(` (${issueYear})`, { align: 'right' });
+              
+              doc.fontSize(10).fillColor('blue').text(`${cert.issuer}${expiryInfo}`);
+              
+              if (cert.credentialId) {
+                doc.fontSize(9).fillColor('gray').text(`ID: ${cert.credentialId}`);
+              }
+
+              if (cert.url) {
+                doc.fontSize(9).fillColor('blue').text(`🔗 ${cert.url}`);
+              }
+              
               doc.moveDown(0.5);
             });
           }
 
-          if (section.content.skills) {
-            const skillsText = section.content.skills.map(skill => `${skill.name} (${skill.level}/5)`).join(', ');
-            doc.fontSize(11).text(skillsText);
+          // Projets
+          if (section.content.projects && section.content.projects.length > 0) {
+            section.content.projects.forEach(project => {
+              if (doc.y > doc.page.height - 120) {
+                doc.addPage();
+              }
+
+              let dateInfo = '';
+              if (project.startDate || project.endDate) {
+                dateInfo = ` (${formatDateRange(project.startDate!, project.endDate)})`;
+              }
+
+              doc.fontSize(12).fillColor('black').text(`${project.name}${dateInfo}`);
+              
+              if (project.role) {
+                doc.fontSize(10).fillColor('blue').text(`Rôle: ${project.role}`);
+              }
+
+              if (project.description) {
+                doc.fontSize(10).fillColor('black').text(project.description);
+              }
+
+              // Réalisations du projet
+              if (project.achievements && project.achievements.length > 0) {
+                doc.fontSize(10).text('Réalisations :');
+                project.achievements.forEach(achievement => {
+                  doc.fontSize(9).text(`• ${achievement}`, { indent: 15 });
+                });
+              }
+
+              // Technologies du projet
+              if (project.technologies && project.technologies.length > 0) {
+                doc.fontSize(9).fillColor('purple').text(`Technologies: ${project.technologies.join(', ')}`);
+              }
+
+              // Liens du projet
+              if (project.url) {
+                doc.fontSize(9).fillColor('blue').text(`🔗 Projet: ${project.url}`);
+              }
+              
+              if (project.repository) {
+                doc.fontSize(9).fillColor('gray').text(`💻 Code: ${project.repository}`);
+              }
+              
+              doc.moveDown(0.7);
+            });
           }
 
-          doc.moveDown();
+          // Contenu personnalisé
+          if (section.content.customContent) {
+            const paragraphs = section.content.customContent.split('\n').filter(p => p.trim());
+            paragraphs.forEach(paragraph => {
+              doc.fontSize(10).fillColor('black').text(paragraph.trim());
+              doc.moveDown(0.3);
+            });
+          }
+
+          doc.moveDown(0.5);
         });
+
+        // Pied de page avec informations générées
+        const pageCount = doc.bufferedPageRange().count;
+        for (let i = 0; i < pageCount; i++) {
+          doc.switchToPage(i);
+          doc.fontSize(8).fillColor('gray').text(
+            `CV généré avec MotivationLetter AI - Page ${i + 1}/${pageCount}`,
+            50,
+            doc.page.height - 30,
+            { align: 'center' }
+          );
+        }
 
         doc.end();
       } catch (error) {
+        console.error('Erreur génération PDF:', error);
         reject(error);
       }
     });
   }
 
   private static async generateCVDOCX(cv: CV): Promise<Buffer> {
+    
     try {
       const doc = new Document({
         sections: [{
@@ -622,13 +859,13 @@ export class CVService {
   private static formatSectionContent(section: any): string {
     if (section.content.workExperience) {
       return section.content.workExperience.map((exp: any) => 
-        `${exp.position} - ${exp.company} (${exp.startDate.getFullYear()}-${exp.endDate?.getFullYear() || 'présent'})\n${exp.description}`
+        `${exp.position} - ${exp.company} (${this.getYearFromDate(exp.startDate)}-${this.getYearFromDate(exp.endDate) || 'présent'})\n${exp.description}`
       ).join('\n\n');
     }
 
     if (section.content.education) {
       return section.content.education.map((edu: any) => 
-        `${edu.degree} - ${edu.institution} (${edu.startDate.getFullYear()}-${edu.endDate?.getFullYear() || 'présent'})`
+        `${edu.degree} - ${edu.institution} (${this.getYearFromDate(edu.startDate)}-${this.getYearFromDate(edu.endDate) || 'présent'})`
       ).join('\n');
     }
 
@@ -767,7 +1004,7 @@ export class CVService {
 
       if (filters.industry) {
         filteredTemplates = filteredTemplates.filter(t => 
-          t.industry.includes(filters.industry)
+          t.industry.includes(filters.industry!)
         );
       }
 

@@ -26,6 +26,7 @@ import {
   type Project
 } from '../types/cv.types';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import { FaBriefcase, FaCertificate, FaCogs, FaFileAlt, FaGraduationCap, FaHeart, FaLanguage, FaMapMarkerAlt, FaProjectDiagram, FaStar, FaUser, FaUsers } from 'react-icons/fa';
 
 const CVEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -442,172 +443,483 @@ const CVEditorPage: React.FC = () => {
     </DashboardLayout>
   );
 };
-
+const GetSectionIcon : React.FC<{ type: CVSectionType }> = ({ type }) => {
+          const icons = {
+              [CVSectionType.WORK_EXPERIENCE]: FaBriefcase,
+              [CVSectionType.EDUCATION]: FaGraduationCap,
+              [CVSectionType.SKILLS]: FaCogs,
+              [CVSectionType.LANGUAGES]: FaLanguage,
+              [CVSectionType.CERTIFICATIONS]: FaCertificate,
+              [CVSectionType.PROJECTS]: FaProjectDiagram,
+              [CVSectionType.VOLUNTEER]: FaHeart,
+              [CVSectionType.HOBBIES]: FaUsers,
+              [CVSectionType.REFERENCES]: FaStar,
+              [CVSectionType.PROFESSIONAL_SUMMARY]: FaFileAlt,
+              [CVSectionType.PERSONAL_INFO]: FaUser,
+              [CVSectionType.CUSTOM]: FaFileAlt
+          };
+          const Icon = icons[type] || FaFileAlt;
+          return (
+            <Icon className="mr-3 text-blue-600"/>
+          );
+      };
 // Composant d'aperçu du CV
 const CVPreview: React.FC<{ cv: CV }> = ({ cv }) => {
+      
   return (
-    <div className="max-w-2xl mx-auto bg-white">
+    <div className="max-w-4xl mx-auto bg-white">
       {/* En-tête */}
-      <div className="text-center mb-8 pb-6 border-b-2 border-gray-200">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          {cv.personalInfo.firstName} {cv.personalInfo.lastName}
-        </h1>
-        <div className="text-gray-600 space-y-1">
-          <p>{cv.personalInfo.email} | {cv.personalInfo.phone}</p>
-          {cv.personalInfo.address && (
-            <p>{cv.personalInfo.address.city}, {cv.personalInfo.address.country}</p>
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-8 rounded-t-lg border-b border-gray-200">
+        <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
+          {/* Photo si disponible */}
+          {cv.personalInfo.photo && (
+            <div className="flex-shrink-0">
+              <img
+                src={cv.personalInfo.photo}
+                alt={`${cv.personalInfo.firstName} ${cv.personalInfo.lastName}`}
+                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+              />
+            </div>
           )}
-          {cv.personalInfo.linkedin && (
-            <p>LinkedIn: {cv.personalInfo.linkedin}</p>
-          )}
+
+          {/* Informations personnelles */}
+          <div className="flex-1">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+              {cv.personalInfo.firstName} {cv.personalInfo.lastName}
+            </h1>
+
+            {cv.personalInfo.professionalSummary && (
+              <p className="text-lg text-gray-600 mb-4 leading-relaxed">
+                {cv.personalInfo.professionalSummary}
+              </p>
+            )}
+
+            {/* Coordonnées */}
+            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+              {cv.personalInfo.email && (
+                <div className="flex items-center">
+                  <span className="mr-2 text-blue-500">✉</span>
+                  {cv.personalInfo.email}
+                </div>
+              )}
+
+              {cv.personalInfo.phone && (
+                <div className="flex items-center">
+                  <span className="mr-2 text-green-500">📞</span>
+                  {cv.personalInfo.phone}
+                </div>
+              )}
+
+              {cv.personalInfo.address && (
+                <div className="flex items-center">
+                  <FaMapMarkerAlt className="mr-1 text-red-500" />
+                  {cv.personalInfo.address.city}, {cv.personalInfo.address.country}
+                </div>
+              )}
+            </div>
+
+            {/* Liens professionnels */}
+            <div className="flex flex-wrap gap-4 mt-3">
+              {cv.personalInfo.linkedin && (
+                <a
+                  href={cv.personalInfo.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center text-sm text-blue-600 hover:text-blue-700"
+                >
+                  <span className="mr-1">💼</span>
+                  LinkedIn
+                </a>
+              )}
+
+              {cv.personalInfo.github && (
+                <a
+                  href={cv.personalInfo.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center text-sm text-gray-700 hover:text-gray-900"
+                >
+                  <span className="mr-1">💻</span>
+                  GitHub
+                </a>
+              )}
+
+              {(cv.personalInfo.website || cv.personalInfo.portfolio) && (
+                <a
+                  href={cv.personalInfo.website || cv.personalInfo.portfolio}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center text-sm text-purple-600 hover:text-purple-700"
+                >
+                  <span className="mr-1">🌐</span>
+                  Site web
+                </a>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Résumé professionnel */}
-      {cv.personalInfo.professionalSummary && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-3 border-b border-gray-300 pb-1">
-            Résumé Professionnel
-          </h2>
-          <p className="text-gray-700 leading-relaxed">
-            {cv.personalInfo.professionalSummary}
-          </p>
-        </div>
-      )}
-
       {/* Sections */}
-      {cv.sections
-        .filter(section => section.isVisible)
-        .sort((a, b) => a.order - b.order)
-        .map((section) => (
-          <div key={section.sectionId} className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-3 border-b border-gray-300 pb-1">
-              {section.title}
-            </h2>
-            <SectionPreview section={section} />
-          </div>
-        ))}
+      <div className="p-8">
+        <div className="space-y-8">
+          {cv.sections
+            .filter(section => section.isVisible)
+            .sort((a, b) => a.order - b.order)
+            .map((section) => (
+              
+              <div key={section.sectionId} className="border-l-4 border-blue-500 pl-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                  <GetSectionIcon type={section.type} />
+                  {section.title}
+                </h2>
+                <SectionPreview section={section} />
+              </div>
+            ))}
+        </div>
+      </div>
     </div>
   );
 };
 
 // Composant d'aperçu de section
 const SectionPreview: React.FC<{ section: CVUserSection }> = ({ section }) => {
-  switch (section.type) {
-    case CVSectionType.WORK_EXPERIENCE:
-      return (
-        <div className="space-y-4">
-          {section.content.workExperience?.map((exp, index) => (
-            <div key={index} className="border-l-2 border-blue-200 pl-4">
-              <div className="flex justify-between items-start mb-1">
-                <h3 className="font-semibold text-gray-900">{exp.position}</h3>
-                <span className="text-sm text-gray-600">
-                  {new Date(exp.startDate).getFullYear()} - {exp.endDate ? new Date(exp.endDate).getFullYear() : 'Présent'}
-                </span>
-              </div>
-              <p className="text-gray-700 font-medium mb-2">{exp.company}</p>
-              <p className="text-gray-600 text-sm mb-2">{exp.description}</p>
-              {exp.achievements.length > 0 && (
-                <ul className="list-disc list-inside text-sm text-gray-600">
-                  {exp.achievements.map((achievement, idx) => (
-                    <li key={idx}>{achievement}</li>
-                  ))}
-                </ul>
+  // Fonction utilitaire pour formater les dates de manière sécurisée
+  const formatDate = (date: Date | string | undefined | null): string => {
+    if (!date) return 'Présent';
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      return dateObj.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+    } catch {
+      return 'Date invalide';
+    }
+  };
+
+  const getSkillLevelColor = (level: number) => {
+    const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
+    return colors[level - 1] || 'bg-gray-500';
+  };
+
+  const getSkillLevelText = (level: number) => {
+    const levels = ['Débutant', 'Novice', 'Intermédiaire', 'Avancé', 'Expert'];
+    return levels[level - 1] || 'Non défini';
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Expérience professionnelle */}
+      {section.content.workExperience?.map((exp: WorkExperience) => (
+        <div key={exp.id} className="bg-gray-50 rounded-lg p-4">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <h3 className="font-semibold text-gray-900">{exp.position}</h3>
+              <p className="text-blue-600 font-medium">{exp.company}</p>
+              {exp.location && (
+                <p className="text-sm text-gray-500 flex items-center mt-1">
+                  <FaMapMarkerAlt className="mr-2 " />
+                  {exp.location}
+                </p>
               )}
             </div>
-          ))}
-        </div>
-      );
-
-    case CVSectionType.EDUCATION:
-      return (
-        <div className="space-y-4">
-          {section.content.education?.map((edu, index) => (
-            <div key={index} className="border-l-2 border-green-200 pl-4">
-              <div className="flex justify-between items-start mb-1">
-                <h3 className="font-semibold text-gray-900">{edu.degree}</h3>
-                <span className="text-sm text-gray-600">
-                  {new Date(edu.startDate).getFullYear()} - {edu.endDate ? new Date(edu.endDate).getFullYear() : 'Présent'}
-                </span>
-              </div>
-              <p className="text-gray-700 font-medium">{edu.institution}</p>
-              <p className="text-gray-600 text-sm">{edu.field}</p>
+            <div className="text-right text-sm text-gray-500">
+              <p>
+                {formatDate(exp.startDate)} - {exp.isCurrent ? 'Présent' : formatDate(exp.endDate)}
+              </p>
+              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                exp.type === 'full-time' ? 'bg-green-100 text-green-700' :
+                exp.type === 'part-time' ? 'bg-blue-100 text-blue-700' :
+                exp.type === 'contract' ? 'bg-purple-100 text-purple-700' :
+                exp.type === 'internship' ? 'bg-orange-100 text-orange-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {exp.type === 'full-time' ? 'Temps plein' :
+                 exp.type === 'part-time' ? 'Temps partiel' :
+                 exp.type === 'contract' ? 'Contrat' :
+                 exp.type === 'internship' ? 'Stage' : 'Bénévolat'}
+              </span>
             </div>
-          ))}
-        </div>
-      );
+          </div>
 
-    case CVSectionType.SKILLS:
-      return (
-        <div className="grid grid-cols-2 gap-4">
-          {section.content.skills?.map((skill, index) => (
-            <div key={index} className="flex justify-between items-center">
-              <span className="text-gray-700">{skill.name}</span>
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((level) => (
-                  <div
-                    key={level}
-                    className={`w-3 h-3 rounded-full mr-1 ${level <= skill.level ? 'bg-blue-500' : 'bg-gray-200'
-                      }`}
-                  />
+          <p className="text-gray-700 mb-3">{exp.description}</p>
+
+          {exp.achievements.length > 0 && (
+            <div className="mb-3">
+              <h4 className="font-medium text-gray-800 mb-2">Réalisations :</h4>
+              <ul className="list-disc list-inside space-y-1 text-gray-700">
+                {exp.achievements.map((achievement, index) => (
+                  <li key={index}>{achievement}</li>
                 ))}
-              </div>
+              </ul>
             </div>
-          ))}
-        </div>
-      );
+          )}
 
-    case CVSectionType.LANGUAGES:
-      return (
-        <div className="grid grid-cols-2 gap-4">
-          {section.content.languages?.map((language, index) => (
-            <div key={index} className="flex justify-between items-center">
-              <span className="text-gray-700">{language.name}</span>
-              <span className="text-sm bg-gray-100 px-2 py-1 rounded">{language.level}</span>
+          {exp.technologies && exp.technologies.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {exp.technologies.map((tech, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium"
+                >
+                  {tech}
+                </span>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      );
+      ))}
 
-    case CVSectionType.CERTIFICATIONS:
-      return (
-        <div className="space-y-3">
-          {section.content.certifications?.map((cert, index) => (
-            <div key={index} className="border-l-2 border-purple-200 pl-4">
-              <h3 className="font-semibold text-gray-900">{cert.name}</h3>
-              <p className="text-gray-700">{cert.issuer}</p>
-              <p className="text-sm text-gray-600">{new Date(cert.issueDate).getFullYear()}</p>
+      {/* Formation */}
+      {section.content.education?.map((edu: Education) => (
+        <div key={edu.id} className="bg-gray-50 rounded-lg p-4">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <h3 className="font-semibold text-gray-900">{edu.degree}</h3>
+              <p className="text-blue-600 font-medium">{edu.institution}</p>
+              <p className="text-gray-600">{edu.field}</p>
+              {edu.location && (
+                <p className="text-sm text-gray-500 flex items-center mt-1">
+                  <FaMapMarkerAlt className="mr-1 " />
+                  {edu.location}
+                </p>
+              )}
             </div>
-          ))}
-        </div>
-      );
+            <div className="text-right text-sm text-gray-500">
+              <p>
+                {formatDate(edu.startDate)} - {formatDate(edu.endDate)}
+              </p>
+              {edu.gpa && (
+                <p className="mt-1">
+                  GPA: {edu.gpa}/{edu.maxGpa || 4}
+                </p>
+              )}
+            </div>
+          </div>
 
-    case CVSectionType.PROJECTS:
-      return (
-        <div className="space-y-4">
-          {section.content.projects?.map((project, index) => (
-            <div key={index} className="border-l-2 border-orange-200 pl-4">
-              <h3 className="font-semibold text-gray-900">{project.name}</h3>
-              <p className="text-gray-600 text-sm mb-2">{project.description}</p>
+          {edu.honors && edu.honors.length > 0 && (
+            <div className="mb-2">
+              <h4 className="font-medium text-gray-800 mb-1">Distinctions :</h4>
               <div className="flex flex-wrap gap-2">
-                {project.technologies.map((tech, idx) => (
-                  <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                    {tech}
+                {edu.honors.map((honor, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium"
+                  >
+                    {honor}
                   </span>
                 ))}
               </div>
             </div>
+          )}
+
+          {edu.coursework && edu.coursework.length > 0 && (
+            <div className="mb-2">
+              <h4 className="font-medium text-gray-800 mb-1">Cours pertinents :</h4>
+              <p className="text-gray-700 text-sm">{edu.coursework.join(', ')}</p>
+            </div>
+          )}
+
+          {edu.thesis && (
+            <div>
+              <h4 className="font-medium text-gray-800 mb-1">Thèse/Mémoire :</h4>
+              <p className="text-gray-700 text-sm italic">{edu.thesis}</p>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Compétences */}
+      {section.content.skills && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {section.content.skills.map((skill: Skill, index: number) => (
+            <div key={index} className="bg-gray-50 rounded-lg p-4">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-medium text-gray-900">{skill.name}</h3>
+                <span className="text-sm text-gray-500 capitalize">
+                  {skill.category === 'technical' ? 'Technique' :
+                   skill.category === 'soft' ? 'Relationnel' :
+                   skill.category === 'language' ? 'Langue' : skill.category}
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-2 mb-2">
+                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all duration-1000 ${getSkillLevelColor(skill.level)}`}
+                    style={{ width: `${(skill.level / 5) * 100}%` }}
+                  />
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  {getSkillLevelText(skill.level)}
+                </span>
+              </div>
+
+              {skill.yearsOfExperience && (
+                <p className="text-xs text-gray-500">
+                  {skill.yearsOfExperience} an{skill.yearsOfExperience > 1 ? 's' : ''} d'expérience
+                </p>
+              )}
+            </div>
           ))}
         </div>
-      );
+      )}
 
-    default:
-      return (
-        <div className="text-gray-600">
-          {section.content.customContent || 'Contenu de la section'}
+      {/* Langues */}
+      {section.content.languages && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {section.content.languages.map((lang: Language, index: number) => (
+            <div key={index} className="bg-gray-50 rounded-lg p-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium text-gray-900">{lang.name}</h3>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  lang.level === 'Native' ? 'bg-green-100 text-green-700' :
+                  ['C1', 'C2'].includes(lang.level) ? 'bg-blue-100 text-blue-700' :
+                  ['B1', 'B2'].includes(lang.level) ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-gray-100 text-gray-700'
+                }`}>
+                  {lang.level}
+                </span>
+              </div>
+
+              {lang.certifications && lang.certifications.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500">
+                    Certifications: {lang.certifications.join(', ')}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-      );
-  }
+      )}
+
+      {/* Certifications */}
+      {section.content.certifications?.map((cert: Certification) => (
+        <div key={cert.id} className="bg-gray-50 rounded-lg p-4">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">{cert.name}</h3>
+              <p className="text-blue-600 font-medium">{cert.issuer}</p>
+              {cert.credentialId && (
+                <p className="text-sm text-gray-500 mt-1">
+                  ID: {cert.credentialId}
+                </p>
+              )}
+            </div>
+            <div className="text-right text-sm text-gray-500">
+              <p>{formatDate(cert.issueDate)}</p>
+              {cert.expiryDate && (
+                <p className="text-red-600">
+                  Expire: {formatDate(cert.expiryDate)}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {cert.url && (
+            <div className="mt-2">
+              <a
+                href={cert.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-700 text-sm"
+              >
+                Voir la certification →
+              </a>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Projets */}
+      {section.content.projects?.map((project: Project) => (
+        <div key={project.id} className="bg-gray-50 rounded-lg p-4">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <h3 className="font-semibold text-gray-900">{project.name}</h3>
+              {project.role && (
+                <p className="text-blue-600 font-medium">{project.role}</p>
+              )}
+            </div>
+            {(project.startDate || project.endDate) && (
+              <div className="text-right text-sm text-gray-500">
+                {project.startDate && (
+                  <p>
+                    {formatDate(project.startDate)}
+                    {project.endDate && ` - ${formatDate(project.endDate)}`}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <p className="text-gray-700 mb-3">{project.description}</p>
+
+          {project.achievements.length > 0 && (
+            <div className="mb-3">
+              <h4 className="font-medium text-gray-800 mb-2">Réalisations :</h4>
+              <ul className="list-disc list-inside space-y-1 text-gray-700">
+                {project.achievements.map((achievement, index) => (
+                  <li key={index}>{achievement}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {project.technologies.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {project.technologies.map((tech, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                >
+                  {tech}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="flex space-x-4">
+            {project.url && (
+              <a
+                href={project.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-700 text-sm flex items-center"
+              >
+                <span className="mr-1">🌐</span>
+                Voir le projet
+              </a>
+            )}
+
+            {project.repository && (
+              <a
+                href={project.repository}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-700 hover:text-gray-900 text-sm flex items-center"
+              >
+                <span className="mr-1">💻</span>
+                Code source
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
+
+      {/* Contenu personnalisé */}
+      {section.content.customContent && (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="prose prose-sm max-w-none text-gray-700">
+            {section.content.customContent.split('\n').map((paragraph, index) => (
+              <p key={index} className="mb-2 last:mb-0">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 // Composant d'édition des informations personnelles
