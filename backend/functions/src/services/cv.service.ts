@@ -766,15 +766,24 @@ export class CVService {
         });
 
         // Pied de page avec informations générées
-        const pageCount = doc.bufferedPageRange().count;
+        const pageRange = doc.bufferedPageRange();
+        const pageCount = pageRange.count;
+        
+        // Itérer sur les pages existantes (start est l'index de la première page)
         for (let i = 0; i < pageCount; i++) {
-          doc.switchToPage(i);
-          doc.fontSize(8).fillColor('gray').text(
-            `CV généré avec MotivationLetter AI - Page ${i + 1}/${pageCount}`,
-            50,
-            doc.page.height - 30,
-            { align: 'center' }
-          );
+          const pageIndex = pageRange.start + i;
+          try {
+            doc.switchToPage(pageIndex);
+            doc.fontSize(8).fillColor('gray').text(
+              `CV généré avec MotivationLetter AI - Page ${i + 1}/${pageCount}`,
+              50,
+              doc.page.height - 30,
+              { align: 'center' }
+            );
+          } catch (error) {
+            console.warn(`Impossible d'ajouter le pied de page à la page ${pageIndex}:`, error);
+            // Continuer sans faire planter le processus
+          }
         }
 
         doc.end();
