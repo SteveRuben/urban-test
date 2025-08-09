@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FaFileAlt,
@@ -29,6 +29,11 @@ import MetaTags from '../components/SEO/MetaTags';
 import api from '../services/api';
 import type { Letter } from '../types';
 import LoadingSpinner from '../components/layout/LoadingSpinner';
+
+interface FirebaseTimestamp {
+  _seconds: number;
+  _nanoseconds?: number;
+}
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -102,16 +107,14 @@ const DashboardPage: React.FC = () => {
   }, [dashboardData]);
 
   // Recherche optimisée avec debounce
-  const debouncedSearch = useCallback(
+  const debouncedSearch = 
     debounce((term: string) => {
       analytics.track({
         action: 'dashboard_search',
         category: 'engagement',
         label: term
       });
-    }, 500),
-    []
-  );
+    }, 500);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value;
@@ -166,7 +169,7 @@ const DashboardPage: React.FC = () => {
         category: 'engagement'
       });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur lors de la suppression:', err);
       toast.error('Erreur', 'Impossible de supprimer la lettre');
     } finally {
@@ -183,9 +186,9 @@ const DashboardPage: React.FC = () => {
     navigate(path);
   };
 
-  const firebaseTimeStamptoDate = (params: any) => {
-    if (params.hasOwnProperty("_seconds")) {
-      const milliseconds = params._seconds * 1000 + params._nanoseconds / 1000000;
+  const firebaseTimeStamptoDate = (params: FirebaseTimestamp ) => {
+    if (typeof params === 'object' && params !== null && '_seconds' in params) {
+      const milliseconds = params._seconds * 1000;
       return new Date(milliseconds);
     }
     return new Date();

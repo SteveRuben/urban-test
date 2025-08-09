@@ -8,6 +8,39 @@ import paymentService from '../services/payment.service';
 import type { Subscription,  Plan} from '../types/subscription.types';
 import type { Payment} from '../types/payment.types';
 
+// Ajouter au début du fichier subscription.store.ts après les imports
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+    status?: number;
+  };
+  message?: string;
+}
+
+// Type guard pour vérifier si c'est une erreur API
+function isApiError(error: unknown): error is ApiError {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'response' in error
+  );
+}
+
+// Fonction utilitaire pour extraire le message d'erreur
+function getErrorMessage(error: unknown, defaultMessage: string): string {
+  if (isApiError(error)) {
+    return error.response?.data?.message || defaultMessage;
+  }
+  
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  return defaultMessage;
+}
+
 // Types pour les statistiques (si pas définis ailleurs)
 export interface PaymentStats {
   totalRevenue: number;
@@ -98,7 +131,7 @@ interface SubscriptionState {
   
   // Actions PayPal
   createPayPalSession: (planType: PlanType, interval: SubscriptionInterval) => Promise<PayPalSessionData>;
-  confirmPayPalPayment: (paymentId: string, paypalData: any) => Promise<void>;
+  confirmPayPalPayment: (paymentId: string, paypalData: Record<string, unknown>) => Promise<void>;
   cancelPayPalPayment: (paymentId: string, reason?: string) => Promise<void>;
   
   // Actions abonnement
@@ -155,13 +188,13 @@ export const useSubscriptionStore = create<SubscriptionState>()(
               aiUsageCache: null,
               letterLimitCache: null 
             });
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur fetch subscription:', error);
-            if (error.response?.status === 404 || error.response?.status === 400) {
+            if (isApiError(error) && (error.response?.status === 404 || error.response?.status === 400)) {
               set({ subscription: null, isLoading: false });
             } else {
               set({ 
-                error: error.response?.data?.message || error.message || 'Erreur lors du chargement de l\'abonnement', 
+                error: getErrorMessage(error, 'Erreur lors du chargement de l\'abonnement'),
                 isLoading: false 
               });
             }
@@ -173,11 +206,16 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             const plans = await subscriptionService.getPlans();
             console.log('Plans récupérés:', plans);
             set({ plans });
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur fetch plans:', error);
-            set({ 
-              error: error.response?.data?.message || error.message || 'Erreur lors du chargement des plans'
-            });
+            if (isApiError(error) && (error.response?.status === 404 || error.response?.status === 400)) {
+              set({ subscription: null, isLoading: false });
+            } else {
+              set({ 
+                error: getErrorMessage(error, 'Erreur lors du chargement des plans'),
+                isLoading: false 
+              });
+            }
           }
         },
         
@@ -186,13 +224,14 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             const payments = await paymentService.getPaymentHistory();
             console.log('Historique paiements récupéré:', payments);
             set({ payments });
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur fetch payment history:', error);
-            if (error.response?.status === 404) {
-              set({ payments: [] });
+            if (isApiError(error) && (error.response?.status === 404 || error.response?.status === 400)) {
+              set({ subscription: null, isLoading: false });
             } else {
               set({ 
-                error: error.response?.data?.message || error.message || 'Erreur lors du chargement de l\'historique'
+                error: getErrorMessage(error, 'Erreur lors du chargement de l\'historique'),
+                isLoading: false 
               });
             }
           }
@@ -202,7 +241,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
           try {
             const paymentStats = await paymentService.getPaymentStats();
             set({ paymentStats });
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur fetch payment stats:', error);
             // Stats optionnelles, ne pas faire planter l'app
           }
@@ -212,7 +251,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
           try {
             const subscriptionStats = await subscriptionService.getSubscriptionStats();
             set({ subscriptionStats });
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur fetch subscription stats:', error);
             // Stats optionnelles
           }
@@ -229,15 +268,21 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             console.log('Session PayPal créée:', session);
             set({ isLoading: false });
             return session;
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur création session PayPal:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de la création de la session PayPal';
-            set({ error: errorMessage, isLoading: false });
-            throw new Error(errorMessage);
+            if (isApiError(error) && (error.response?.status === 404 || error.response?.status === 400)) {
+              set({ subscription: null, isLoading: false });
+            } else {
+              set({ 
+                error: getErrorMessage(error, 'Erreur lors de la création de la session PayPal'),
+                isLoading: false 
+              });
+            }
+            throw new Error(getErrorMessage(error, 'Erreur lors de la création de la session PayPal'));
           }
         },
         
-        confirmPayPalPayment: async (paymentId: string, paypalData: any) => {
+        confirmPayPalPayment: async (paymentId: string, paypalData: Record<string, unknown>) => {
           set({ isLoading: true, error: null });
           try {
             await paymentService.confirmPayPalPayment(paymentId, paypalData);
@@ -247,11 +292,17 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             await get().refreshAll();
             
             set({ isLoading: false });
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur confirmation PayPal:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de la confirmation du paiement';
-            set({ error: errorMessage, isLoading: false });
-            throw new Error(errorMessage);
+            if (isApiError(error) && (error.response?.status === 404 || error.response?.status === 400)) {
+              set({ subscription: null, isLoading: false });
+            } else {
+              set({ 
+                error: getErrorMessage(error, 'Erreur lors de la confirmationdu paiement'),
+                isLoading: false 
+              });
+            }
+            throw new Error(getErrorMessage(error, 'Erreur lors de la création de la session PayPal'));
           }
         },
         
@@ -261,11 +312,17 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             await paymentService.cancelPayPalPayment(paymentId, reason);
             console.log('Paiement PayPal annulé');
             set({ isLoading: false });
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur annulation PayPal:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de l\'annulation du paiement';
-            set({ error: errorMessage, isLoading: false });
-            throw new Error(errorMessage);
+            if (isApiError(error) && (error.response?.status === 404 || error.response?.status === 400)) {
+              set({ subscription: null, isLoading: false });
+            } else {
+              set({ 
+                error: getErrorMessage(error, 'Erreur lors dannulation PayPal'),
+                isLoading: false 
+              });
+            }
+            throw new Error(getErrorMessage(error, 'Erreur lors dannulation PayPal'));
           }
         },
         
@@ -279,11 +336,17 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             const subscription = await subscriptionService.createFreeSubscription();
             console.log('Abonnement gratuit créé:', subscription);
             set({ subscription, isLoading: false });
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur création abonnement gratuit:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de la création de l\'abonnement gratuit';
-            set({ error: errorMessage, isLoading: false });
-            throw new Error(errorMessage);
+            if (isApiError(error) && (error.response?.status === 404 || error.response?.status === 400)) {
+              set({ subscription: null, isLoading: false });
+            } else {
+              set({ 
+                error: getErrorMessage(error, 'Erreur lors de la création de l\'abonnement gratuit'),
+                isLoading: false 
+              });
+            }
+            throw new Error(getErrorMessage(error, 'Erreur lors dannulation PayPal'));
           }
         },
         
@@ -303,11 +366,17 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             await get().fetchSubscription();
             
             set({ isLoading: false });
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur annulation abonnement:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de l\'annulation de l\'abonnement';
-            set({ error: errorMessage, isLoading: false });
-            throw new Error(errorMessage);
+            if (isApiError(error) && (error.response?.status === 404 || error.response?.status === 400)) {
+              set({ subscription: null, isLoading: false });
+            } else {
+              set({ 
+                error: getErrorMessage(error, 'Erreur lors de l\'annulation abonnement'),
+                isLoading: false 
+              });
+            }
+            throw new Error(getErrorMessage(error, 'Erreur lors de l\'annulation abonnement'));
           }
         },
         
@@ -327,11 +396,17 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             await get().fetchSubscription();
             
             set({ isLoading: false });
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur réactivation abonnement:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de la réactivation de l\'abonnement';
-            set({ error: errorMessage, isLoading: false });
-            throw new Error(errorMessage);
+            if (isApiError(error) && (error.response?.status === 404 || error.response?.status === 400)) {
+              set({ subscription: null, isLoading: false });
+            } else {
+              set({ 
+                error: getErrorMessage(error, 'Erreur reactivation abonnement'),
+                isLoading: false 
+              });
+            }
+            throw new Error(getErrorMessage(error, 'Erreur reactivation abonnement'));
           }
         },
         
@@ -345,11 +420,17 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             await get().refreshAll();
             
             set({ isLoading: false });
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur changement de plan:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Erreur lors du changement de plan';
-            set({ error: errorMessage, isLoading: false });
-            throw new Error(errorMessage);
+            if (isApiError(error) && (error.response?.status === 404 || error.response?.status === 400)) {
+              set({ subscription: null, isLoading: false });
+            } else {
+              set({ 
+                error: getErrorMessage(error, 'Erreur lors du chargement de plan'),
+                isLoading: false 
+              });
+            }
+            throw new Error(getErrorMessage(error, 'Erreur lors du chargement de plan'));
           }
         },
         
@@ -389,7 +470,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             set({ aiUsageCache: newCache });
             
             return usage;
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur vérification limites IA:', error);
             // Retourner des valeurs par défaut en cas d'erreur
             return {
@@ -432,7 +513,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             set({ letterLimitCache: newCache });
             
             return limit;
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur vérification limites lettres:', error);
             // Retourner des valeurs par défaut en cas d'erreur
             return {
@@ -454,11 +535,18 @@ export const useSubscriptionStore = create<SubscriptionState>()(
             // Actualiser les limites
             await get().checkAIUsageLimit(true);
             
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Erreur incrémentation IA:', error);
+            if (isApiError(error) && (error.response?.status === 404 || error.response?.status === 400)) {
+              set({ subscription: null, isLoading: false });
+            } else {
+              set({ 
+                error: getErrorMessage(error, 'Erreur lors du chargement de l\'abonnement'),
+                isLoading: false 
+              });
+            }
             throw new Error(
-              error.response?.data?.message || 
-              'Erreur lors de l\'incrémentation de l\'utilisation IA'
+              getErrorMessage(error, 'Erreur lors de l\'incrémentation IA')
             );
           }
         },

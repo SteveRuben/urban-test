@@ -5,6 +5,10 @@ import paymentService from '../services/payment.service';
 import { useSubscriptionStore } from '../store/subscription.store';
 import type { PlanType, SubscriptionInterval, PayPalSessionData } from '../store/subscription.store';
 
+interface PayPalError extends Error {
+  paypalErrorCode?: string;
+}
+
 /**
  * Hook pour gérer les paiements PayPal
  */
@@ -16,12 +20,11 @@ export const usePayPal = () => {
   const createSession = useCallback(async (
     planType: PlanType, 
     interval: SubscriptionInterval,
-    // @ts-ignore
-    options?: {
-      currency?: string;
-      successUrl?: string;
-      cancelUrl?: string;
-    }
+    // options?: {
+    //   currency?: string;
+    //   successUrl?: string;
+    //   cancelUrl?: string;
+    // }
   ): Promise<PayPalSessionData> => {
     try {
       setLoading(true);
@@ -36,8 +39,8 @@ export const usePayPal = () => {
       
       return session;
       
-    } catch (err: any) {
-      const errorMessage = err.message || 'Erreur lors de la création du paiement PayPal';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la création du paiement PayPal';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -45,7 +48,7 @@ export const usePayPal = () => {
     }
   }, [createPayPalSession]);
 
-  const confirmPayment = useCallback(async (paymentId: string, paypalData: any) => {
+  const confirmPayment = useCallback(async (paymentId: string, paypalData: { token: string; payerID: string }) => {
     try {
       setLoading(true);
       setError(null);
@@ -53,8 +56,8 @@ export const usePayPal = () => {
       const result = await paymentService.confirmPayPalPayment(paymentId, paypalData);
       return result;
       
-    } catch (err: any) {
-      const errorMessage = err.message || 'Erreur lors de la confirmation du paiement';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la confirmation du paiement';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -69,8 +72,8 @@ export const usePayPal = () => {
       
       await paymentService.cancelPayPalPayment(paymentId, reason);
       
-    } catch (err: any) {
-      const errorMessage = err.message || 'Erreur lors de l\'annulation du paiement';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de l\'annulation du paiement';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -132,7 +135,7 @@ export const usePayPalReturn = () => {
           await fetchSubscription();
           await fetchPaymentHistory();
           
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur confirmation PayPal:', error);
           setReturnData({
             type: 'success',
@@ -243,6 +246,10 @@ export const usePayPalNotifications = () => {
     read: boolean;
   }>>([]);
 
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
   const addNotification = useCallback((
     type: 'success' | 'error' | 'warning' | 'info',
     title: string,
@@ -265,11 +272,9 @@ export const usePayPalNotifications = () => {
         removeNotification(notification.id);
       }, 5000);
     }
-  }, []);
+  }, [removeNotification]);
 
-  const removeNotification = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  }, []);
+ 
 
   const markAsRead = useCallback((id: string) => {
     setNotifications(prev => 
@@ -382,8 +387,9 @@ export const usePayPalStats = () => {
       const data = await paymentService.getPaymentStats();
       setStats(data);
       
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de la récupération des statistiques');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la récupération des statistiques';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -523,8 +529,8 @@ export const usePayPalErrorHandler = () => {
   const maxRetries = 3;
 
   const handleError = useCallback(async (
-    error: any,
-    retryFunction: () => Promise<any>
+    error: unknown,
+    retryFunction: () => Promise<unknown>
   ) => {
     console.error('Erreur PayPal:', error);
 
@@ -536,7 +542,7 @@ export const usePayPalErrorHandler = () => {
     ];
 
     const shouldRetry = !noRetryErrors.some(code => 
-      error.message?.includes(code) || error.paypalErrorCode === code
+     error instanceof Error && error.message?.includes(code) || (error as PayPalError).paypalErrorCode === code
     );
 
     if (shouldRetry && retryCount < maxRetries) {

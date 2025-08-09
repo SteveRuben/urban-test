@@ -2,6 +2,16 @@ import { useEffect } from 'react';
 import { useNotificationStore } from '../store/notification.store';
 import { useAuthStore } from '../store/auth.store';
 
+interface NotificationData {
+  letterId?: string;
+  planName?: string;
+  used?: number;
+  total?: number;
+  [key: string]: unknown; // Pour permettre des propriétés supplémentaires si nécessaire
+}
+
+
+
 export const useNotifications = () => {
   const { 
     notifications, 
@@ -143,9 +153,9 @@ export const useNotifications = () => {
 
 // Hook pour les notifications en temps réel (composants spécifiques)
 export const useRealtimeNotifications = (callbacks?: {
-  onLetterGenerated?: (data: any) => void;
-  onSubscriptionChange?: (data: any) => void;
-  onQuotaWarning?: (data: any) => void;
+  onLetterGenerated?: (data: NotificationData) => void;
+  onSubscriptionChange?: (data: NotificationData) => void;
+  onQuotaWarning?: (data: NotificationData) => void;
 }) => {
   const { notifications } = useNotifications();
 
@@ -154,8 +164,8 @@ export const useRealtimeNotifications = (callbacks?: {
     const latestNotification = notifications[0];
     
     if (latestNotification && callbacks) {
-      // @ts-ignore
-      const { data, type, title } = latestNotification;
+      // const { data, type, title } = latestNotification;
+      const { data } = latestNotification;
       
       // Déclencher le callback approprié selon le contenu
       if (data?.letterId && callbacks.onLetterGenerated) {

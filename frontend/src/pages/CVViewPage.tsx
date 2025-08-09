@@ -43,7 +43,8 @@ import { CVSectionType,
     type Skill, 
     type Language, 
     type Certification, 
-    type Project } from '../types/cv.types';
+    type Project, 
+    type CVUserSection} from '../types/cv.types';
 import { analytics } from '../utils/analytics';
 import MetaTags from '../components/SEO/MetaTags';
 import LoadingSpinner from '../components/layout/LoadingSpinner';
@@ -118,9 +119,11 @@ const CVViewPage: React.FC = () => {
                 label: format
             });
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Erreur export:', error);
-            toast.error('Erreur d\'export', error.message || 'Impossible d\'exporter le CV');
+            
+            const errorMessage = error instanceof Error ? error.message : 'Impossible d\'exporter le CV';
+            toast.error('Erreur d\'export', errorMessage );
         } finally {
             setIsExporting(false);
             setExportFormat('');
@@ -137,6 +140,7 @@ const CVViewPage: React.FC = () => {
             toast.success('Lien copié', 'Le lien du CV a été copié dans le presse-papiers');
             setShareMenuOpen(false);
         } catch (error) {
+            console.log('Erreur', 'Impossible de copier le lien',error)
             toast.error('Erreur', 'Impossible de copier le lien');
         }
     };
@@ -564,7 +568,7 @@ const CVViewPage: React.FC = () => {
 
 // Composant pour afficher une section du CV
 const CVSection: React.FC<{ 
-    section: any;
+    section: CVUserSection;
     getSkillLevelText: (level: number) => string;
     getSkillLevelColor: (level: number) => string;
 }> = ({ section, getSkillLevelText, getSkillLevelColor }) => {

@@ -205,13 +205,13 @@ class NotificationService {
   // ===== UTILITAIRES =====
   
   // Déclencher une notification personnalisée
-  //@ts-ignore
+  //@ts-expect-error car certains types n'existent pas forcement
   custom = (notification: Parameters<typeof this.getStore>['addNotification'][0]) => {
     this.getStore().addNotification(notification);
   };
 
   // Notifications bulk pour les admins
-  //@ts-ignore
+  //@ts-expect-error car certains types n'existent pas forcement
   broadcast = async (notification: Parameters<typeof this.getStore>['addNotification'][0]) => {
     // En développement, juste ajouter localement
     if (process.env.NODE_ENV === 'development') {

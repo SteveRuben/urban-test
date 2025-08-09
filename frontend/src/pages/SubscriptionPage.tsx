@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import {  useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Button from '../components/common/Button';
 import { useSubscriptionStore } from '../store/subscription.store';
@@ -25,11 +25,20 @@ import {
   FaClock
 } from 'react-icons/fa';
 
+
+interface Plan {
+  id: string;
+  name: string;
+  price?: number;
+  features?: string[];
+  interval?: string;
+}
+
 // Types et interfaces
 interface PayPalModalProps {
   isOpen: boolean;
   onClose: () => void;
-  plan: any;
+  plan: Plan;
   onConfirm: (planId: string, interval: string) => void;
   isLoading: boolean;
 }
@@ -282,10 +291,10 @@ const PayPalModal: React.FC<PayPalModalProps> = ({
 };
 // SubscriptionPage.tsx - Partie 3/4 : Composant Principal et State
 const SubscriptionPage: React.FC = () => {
-  // @ts-ignore
-  const navigate = useNavigate();
+
+  // const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showPayPalModal, setShowPayPalModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -338,7 +347,7 @@ const SubscriptionPage: React.FC = () => {
           await fetchSubscription();
           await fetchPaymentHistory();
 
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur confirmation PayPal:', error);
           setSuccessMessage('');
         }
@@ -361,7 +370,7 @@ const SubscriptionPage: React.FC = () => {
     handlePayPalReturn();
   }, [searchParams, fetchSubscription, fetchPaymentHistory]);
 
-  const handleSelectPlan = (plan: any) => {
+  const handleSelectPlan = (plan: Plan) => {
     setSelectedPlan(plan);
     setShowPayPalModal(true);
   };
@@ -370,7 +379,7 @@ const SubscriptionPage: React.FC = () => {
     setProcessingPayment(true);
 
     try {
-      // @ts-ignore
+      // @ts-expect-error because we have mini-incompatibility 
       const session = await createPayPalSession(planId, interval);
       console.log('Session PayPal créée:', session);
       if (session.approvalUrl) {
@@ -379,7 +388,7 @@ const SubscriptionPage: React.FC = () => {
       } else {
         throw new Error('URL d\'approbation PayPal non reçue');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur création session PayPal:', err);
       // L'erreur est déjà gérée par le store
     } finally {
@@ -406,7 +415,7 @@ const SubscriptionPage: React.FC = () => {
     }
   };
 
-  const formatDate = (date: Date | string | null| any) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString('fr-FR', {
       year: 'numeric',
@@ -415,7 +424,7 @@ const SubscriptionPage: React.FC = () => {
     });
   };
 
-  const getDaysRemaining = (endDate: Date | string | null| any) => {
+  const getDaysRemaining = (endDate: Date | string | null) => {
     console.log("date end:"+endDate);
     if (!endDate) return null;
     const end = new Date(endDate);
@@ -976,7 +985,7 @@ const SubscriptionPage: React.FC = () => {
       <PayPalModal
         isOpen={showPayPalModal}
         onClose={() => setShowPayPalModal(false)}
-        plan={selectedPlan}
+        plan={selectedPlan!}
         onConfirm={handleConfirmPayment}
         isLoading={processingPayment}
       />

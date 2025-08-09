@@ -16,6 +16,26 @@ import { auth } from '../config/firebase';
 import api from '../services/api';
 import type { User } from '../types';
 
+interface AxiosError {
+  response?: {
+    status?: number;
+    data?: {
+      error?: string;
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
+// Type guard pour vérifier si c'est une erreur Axios
+function isAxiosError(error: unknown): error is AxiosError {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'response' in error
+  );
+}
+
 interface AuthState {
   user: User | null;
   isLoading: boolean;
@@ -59,8 +79,8 @@ const formatAuthError = (error: AuthError): string => {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    // @ts-ignore
-    (set, get) => ({
+    
+    (set) => ({
       user: null,
       isLoading: true, // Commencer en mode loading
       error: null,
@@ -83,10 +103,10 @@ export const useAuthStore = create<AuthState>()(
               try {
                 response = await api.get('/users/profile');
                 console.log('Store: Profil récupéré via /users/profile');
-              } catch (profileError: any) {
+              } catch (profileError: unknown) {
                 console.log('Store: /users/profile échoué, essai avec /users/me');
                 console.error('Store: Erreur lors de la récupération du profil:', profileError);
-                if (profileError.response?.status !== 404) {
+                if (!isAxiosError(profileError) || profileError.response?.status !== 404) {
                   const selectedPlan = localStorage.getItem('selectedPlan') || 'free';
                   const profileData = {
                     displayName: firebaseUser.displayName,
@@ -112,11 +132,11 @@ export const useAuthStore = create<AuthState>()(
                 error: null
               });
               console.log('Store: État mis à jour avec succès');
-            } catch (error: any) {
+            } catch (error: unknown) {
               console.error('Store: Erreur lors de la récupération du profil:', error);
               
               // Si l'utilisateur n'existe pas dans l'API, le créer
-              if (error.response?.status === 404) {
+              if (!isAxiosError(error) || error.response?.status !== 404) {
                 try {
                   console.log('Store: Création d\'un nouvel utilisateur');
                   const selectedPlan = localStorage.getItem('selectedPlan') || 'free';
@@ -194,10 +214,10 @@ export const useAuthStore = create<AuthState>()(
           // onAuthStateChanged se chargera de récupérer les données utilisateur
           // Pas besoin de faire les appels API ici
           
-        } catch (error: any) {
-          console.error('Store: Erreur de connexion:', error);
+        } catch (error: unknown) {
+          const authError = error as AuthError;
           set({ 
-            error: formatAuthError(error), 
+            error: formatAuthError(authError), 
             isLoading: false
           });
           throw error;
@@ -220,10 +240,11 @@ export const useAuthStore = create<AuthState>()(
           if (plan && plan !== 'free') {
             localStorage.setItem('selectedPlan', plan);
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur d\'inscription:', error);
+          const authError = error as AuthError;
           set({ 
-            error: formatAuthError(error as AuthError), 
+            error: formatAuthError(authError), 
             isLoading: false
           });
           throw error;
@@ -243,7 +264,7 @@ export const useAuthStore = create<AuthState>()(
           
           // onAuthStateChanged se chargera du reste
           
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur de connexion Google:', error);
           set({ 
             error: formatAuthError(error as AuthError), 
@@ -265,7 +286,7 @@ export const useAuthStore = create<AuthState>()(
           
           // onAuthStateChanged se chargera du reste
           
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur de connexion GitHub:', error);
           set({ 
             error: formatAuthError(error as AuthError), 
@@ -281,7 +302,7 @@ export const useAuthStore = create<AuthState>()(
           await firebaseSignOut(auth);
           console.log('Store: Déconnexion réussie');
           // onAuthStateChanged mettra à jour l'état automatiquement
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur de déconnexion:', error);
           set({ 
             error: formatAuthError(error as AuthError), 
@@ -296,7 +317,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           await sendPasswordResetEmail(auth, email);
           set({ isLoading: false });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur de réinitialisation:', error);
           set({ 
             error: formatAuthError(error as AuthError), 
@@ -319,11 +340,12 @@ export const useAuthStore = create<AuthState>()(
             user: response.data.user, 
             isLoading: false 
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur de mise à jour:', error);
+          const authError = error as AuthError;
           set({ 
-            error: error.response?.data?.error || 'Erreur lors de la mise à jour du profil', 
-            isLoading: false 
+            error: formatAuthError(authError), 
+            isLoading: false
           });
           throw error;
         }

@@ -321,6 +321,7 @@ export interface CVTemplate {
   prohibitedElements: string[];
   createdAt: Date;
   updatedAt: Date;
+  isDefault?: boolean;
 }
 
 // Types pour les formulaires

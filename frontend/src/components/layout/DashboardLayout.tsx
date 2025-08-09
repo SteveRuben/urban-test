@@ -28,6 +28,20 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  createdAt: string | Date;
+  read: boolean;
+  action?: {
+    href?: string;
+    label?: string;
+    onClick?: () => void;
+  };
+}
+
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -138,7 +152,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   };
 
   // Gérer le clic sur une notification
-  const handleNotificationClick = async (notification: any) => {
+  const handleNotificationClick = async (notification: Notification) => {
     // Marquer comme lu
     await handleRead(notification.id);
     
@@ -158,6 +172,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       await markAllAsRead();
       toast.success('Notifications marquées comme lues');
     } catch (error) {
+      console.error('Erreur lors du marquage des notifications:', error);
       toast.error('Erreur lors de la mise à jour');
     }
   };
@@ -170,6 +185,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         toast.success('Notifications supprimées');
         setNotificationsOpen(false);
       } catch (error) {
+        console.error('Erreur lors du marquage des notifications:', error);
         toast.error('Erreur lors de la suppression');
       }
     }

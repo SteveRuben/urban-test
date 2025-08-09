@@ -1,5 +1,5 @@
 // LoginPage.tsx - Version Premium
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaGoogle, FaGithub, FaEye, FaEyeSlash, FaRocket, FaShieldAlt } from 'react-icons/fa';
 import { useAuthStore } from '../store/auth.store';
@@ -8,6 +8,10 @@ import { LazySection } from '../components/performance/LazySection';
 import { analytics } from '../utils/analytics';
 import MetaTags from '../components/SEO/MetaTags';
 import { debounce } from '../utils/performance';
+
+interface LocationState {
+  from?: { pathname: string };
+}
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,7 +24,7 @@ const LoginPage: React.FC = () => {
   const [validationErrors, setValidationErrors] = useState<{email?: string; password?: string}>({});
   const [isFormTouched, setIsFormTouched] = useState(false);
   
-  const from = (location.state as any)?.from?.pathname || '/dashboard';
+  const from = (location.state as LocationState | null)?.from?.pathname || '/dashboard';
   
   const { 
     login, 
@@ -50,7 +54,7 @@ const LoginPage: React.FC = () => {
   }, [isAuthenticated, navigate, from, toast]);
 
   // Validation en temps réel avec debounce
-  const debouncedValidation = useCallback(
+  const debouncedValidation = 
     debounce((email: string, password: string) => {
       if (!isFormTouched) return;
       
@@ -65,9 +69,7 @@ const LoginPage: React.FC = () => {
       }
       
       setValidationErrors(errors);
-    }, 300),
-    [isFormTouched]
-  );
+    }, 300);
 
   useEffect(() => {
     debouncedValidation(email, password);

@@ -50,6 +50,31 @@ export const LetterType = {
 
 export type LetterType = typeof LetterType[keyof typeof LetterType];
 
+interface RawTemplateData {
+  id: string;
+  type: string;
+  title: string;
+  template: string;
+  description?: string;
+  previewImage?: string;
+  isPublic: boolean;
+  isPremium?: boolean;
+  isAIGenerated?: boolean;
+  isFeatured?: boolean;
+  useCount?: number;
+  rating?: number;
+  reviewCount?: number;
+  creatorId?: string;
+  creatorName?: string;
+  tags?: string[];
+  difficulty?: string;
+  estimatedTime?: number;
+  successRate?: number;
+  industry?: string[];
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
 export interface LetterTemplate {
   id: string;
   type: LetterType;
@@ -102,6 +127,13 @@ interface FilterState {
   sortBy: 'rating' | 'useCount' | 'recent' | 'popular' | 'alphabetical';
   viewMode: 'grid' | 'list' | 'compact';
 }
+
+type BooleanFilterKeys = {
+  [K in keyof FilterState]: FilterState[K] extends boolean ? K : never;
+}[keyof FilterState];
+
+type ViewModeType = FilterState['viewMode'];
+type SortByType = FilterState['sortBy'];
 
 // Données pour les catégories avec améliorations
 const templateTypes = [
@@ -227,8 +259,8 @@ const TemplatesPage: React.FC = () => {
   }, []);
 
   // Debounced search pour optimiser les performances
-  const debouncedSearch = useCallback(
-    debounce((searchTerm: string) => {
+  const debouncedSearch = useMemo(
+    () => debounce((searchTerm: string) => {
       analytics.track({
         action: 'template_search',
         category: 'engagement',
@@ -249,6 +281,18 @@ const TemplatesPage: React.FC = () => {
       debouncedSearch(value as string);
     }
   }, [debouncedSearch]);
+
+  const handleViewModeChange = useCallback((viewMode: ViewModeType) => {
+    updateFilter('viewMode', viewMode);
+  }, [updateFilter]);
+  
+  const handleSortByChange = useCallback((sortBy: SortByType) => {
+    updateFilter('sortBy', sortBy);
+  }, [updateFilter]);
+  
+  const handleBooleanFilterChange = useCallback((key: BooleanFilterKeys, value: boolean) => {
+    updateFilter(key, value);
+  }, [updateFilter]);
 
   const updateUIState = useCallback(<K extends keyof typeof uiState>(
     key: K, 
@@ -271,7 +315,7 @@ const TemplatesPage: React.FC = () => {
       const templatesData = templatesResponse.data.data?.templates || templatesResponse.data.templates || [];
       const bookmarksData = bookmarksResponse.data.bookmarks || [];
       
-      const processedTemplates = templatesData.map((template: any) => ({
+      const processedTemplates = templatesData.map((template: RawTemplateData) => ({
         ...template,
         createdAt: new Date(template.createdAt),
         updatedAt: new Date(template.updatedAt),
@@ -285,13 +329,13 @@ const TemplatesPage: React.FC = () => {
       const allTags = [...new Set(
           processedTemplates
             .flatMap((t: LetterTemplate) => t.tags || [])
-            .filter((tag:any): tag is string => Boolean(tag) && typeof tag === 'string')
+            .filter((tag:unknown): tag is string => Boolean(tag) && typeof tag === 'string')
         )].sort() as string[];
       
       const allIndustries = [...new Set(
           processedTemplates
             .flatMap((t: LetterTemplate) => t.industry || [])
-            .filter((industry:any): industry is string => Boolean(industry) && typeof industry === 'string')
+            .filter((industry:unknown): industry is string => Boolean(industry) && typeof industry === 'string')
       )].sort() as string[];
       
       setAvailableTags(allTags);
@@ -316,14 +360,15 @@ const TemplatesPage: React.FC = () => {
         value: processedTemplates.length
       });
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur lors de la récupération des templates:', err);
-      setError(err.message || 'Erreur lors du chargement des modèles');
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors du chargement des modèles';
+      setError(errorMessage);
       
       analytics.track({
         action: 'templates_load_error',
         category: 'error',
-        label: err.message
+        label: errorMessage
       });
     } finally {
       setIsLoading(false);
@@ -380,7 +425,7 @@ const TemplatesPage: React.FC = () => {
 
   // Filtrage et tri optimisés avec useMemo
   const filteredAndSortedTemplates = useMemo(() => {
-    let filtered = templates.filter(template => {
+    const filtered = templates.filter(template => {
       // Recherche textuelle avancée
       const searchLower = filters.searchTerm.toLowerCase();
       const matchesSearch = !filters.searchTerm || 
@@ -423,24 +468,24 @@ const TemplatesPage: React.FC = () => {
     // Tri avancé
     filtered.sort((a, b) => {
       switch (filters.sortBy) {
-        case 'rating':
+        case 'rating':{
           const ratingDiff = (b.rating || 0) - (a.rating || 0);
-          return ratingDiff !== 0 ? ratingDiff : (b.reviewCount || 0) - (a.reviewCount || 0);
+          return ratingDiff !== 0 ? ratingDiff : (b.reviewCount || 0) - (a.reviewCount || 0);}
         
-        case 'useCount':
-          return (b.useCount || 0) - (a.useCount || 0);
+        case 'useCount':{
+          return (b.useCount || 0) - (a.useCount || 0);}
         
-        case 'recent':
-          return b.updatedAt.getTime() - a.updatedAt.getTime();
+        case 'recent':{
+          return b.updatedAt.getTime() - a.updatedAt.getTime();}
         
-        case 'popular':
+        case 'popular':{
           // Score de popularité combiné
           const scoreA = (a.useCount || 0) * 0.7 + (a.rating || 0) * 0.3;
           const scoreB = (b.useCount || 0) * 0.7 + (b.rating || 0) * 0.3;
-          return scoreB - scoreA;
+          return scoreB - scoreA;}
         
-        case 'alphabetical':
-          return a.title.localeCompare(b.title);
+        case 'alphabetical':{
+          return a.title.localeCompare(b.title);}
         
         default:
           return 0;
@@ -655,7 +700,7 @@ const TemplatesPage: React.FC = () => {
               {viewModes.map(mode => (
                 <button
                   key={mode.value}
-                  onClick={() => updateFilter('viewMode', mode.value as any)}
+                  onClick={() => handleViewModeChange(mode.value as ViewModeType)}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     filters.viewMode === mode.value
                       ? 'bg-white text-blue-600 shadow-sm'
@@ -671,7 +716,7 @@ const TemplatesPage: React.FC = () => {
             {/* Tri */}
             <select
               value={filters.sortBy}
-              onChange={(e) => updateFilter('sortBy', e.target.value as any)}
+              onChange={(e) => handleSortByChange(e.target.value as SortByType)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
             >
               {sortOptions.map(option => (
@@ -750,7 +795,7 @@ const TemplatesPage: React.FC = () => {
                               <input
                                 type="checkbox"
                                 checked={filters[option.key as keyof FilterState] as boolean}
-                                onChange={(e) => updateFilter(option.key as keyof FilterState, e.target.checked as any)}
+                                onChange={(e) => handleBooleanFilterChange(option.key as BooleanFilterKeys, e.target.checked)}
                                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
                               />
                               <option.icon className="text-gray-400 h-4 w-4" />
@@ -922,7 +967,7 @@ const TemplatesPage: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={filters[option.key as keyof FilterState] as boolean}
-                    onChange={(e) => updateFilter(option.key as keyof FilterState, e.target.checked as any)}
+                    onChange={(e) => handleBooleanFilterChange(option.key as BooleanFilterKeys, e.target.checked)}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700">{option.label}</span>

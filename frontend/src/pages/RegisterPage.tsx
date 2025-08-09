@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaLock, FaGoogle, FaGithub, FaEye, FaEyeSlash, FaRocket, FaShieldAlt, FaCheck, FaCrown } from 'react-icons/fa';
 import { useAuthStore } from '../store/auth.store';
@@ -7,6 +7,13 @@ import { LazySection } from '../components/performance/LazySection';
 import { analytics } from '../utils/analytics';
 import MetaTags from '../components/SEO/MetaTags';
 import { debounce } from '../utils/performance';
+
+interface RegisterFormData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -68,8 +75,8 @@ const RegisterPage: React.FC = () => {
   }, []);
 
   // Validation en temps réel avec debounce
-  const debouncedValidation = useCallback(
-    debounce((formData: any) => {
+  const debouncedValidation = useMemo(
+    () => debounce((formData: RegisterFormData) => {
       if (!isFormTouched) return;
       
       const errors: Record<string, string> = {};
@@ -95,8 +102,9 @@ const RegisterPage: React.FC = () => {
       
       setValidationErrors(errors);
     }, 300),
-    [isFormTouched, calculatePasswordStrength]
+    [isFormTouched, calculatePasswordStrength] // Dépendances importantes
   );
+
 
   useEffect(() => {
     debouncedValidation(formData);
@@ -197,7 +205,7 @@ const RegisterPage: React.FC = () => {
         label: provider
       });
     } catch (error) {
-      console.error(`Erreur d\'inscription ${provider}:`, error);
+      console.error(`Erreur d'inscription ${provider}:`, error);
       analytics.track({
         action: 'register_failed',
         category: 'auth',

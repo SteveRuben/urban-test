@@ -7,6 +7,62 @@ import type {
   WebSocketNotificationMessage 
 } from '../types/notification.types';
 
+// Interface pour les erreurs API
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
+// Interface pour la réponse des notifications
+interface NotificationsResponse {
+  data: {
+    notifications: Notification[];
+    unreadCount?: number;
+  } | Notification[];
+}
+
+// Interface pour l'auth store global
+interface AuthStore {
+  getState?: () => {
+    user?: {
+      token?: string;
+    };
+  };
+}
+
+// Extension de l'interface Window
+declare global {
+  interface Window {
+    __AUTH_STORE__?: AuthStore;
+  }
+}
+
+// Type guard pour vérifier si c'est une erreur API
+function isApiError(error: unknown): error is ApiError {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'response' in error
+  );
+}
+
+// Fonction utilitaire pour extraire le message d'erreur
+function getErrorMessage(error: unknown, defaultMessage: string): string {
+  if (isApiError(error)) {
+    return error.response?.data?.message || defaultMessage;
+  }
+  
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  return defaultMessage;
+}
+
 // WebSocket instance
 let ws: WebSocket | null = null;
 
@@ -21,7 +77,7 @@ export const useNotificationStore = create<NotificationState>()(
       fetchNotifications: async () => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.get<any>('/notifications');
+          const response = await api.get<NotificationsResponse>('/notifications');
           console.log('Notifications récupérées:', response.data?.data);
           const data = response.data.data;
           const notifications = data.notifications || data;
@@ -31,10 +87,10 @@ export const useNotificationStore = create<NotificationState>()(
             unreadCount: data.unreadCount || notifications.filter((n: Notification) => !n.read).length,
             isLoading: false 
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur lors de la récupération des notifications:', error);
           set({ 
-            error: error.response?.data?.message || 'Erreur lors du chargement des notifications',
+            error: getErrorMessage(error, 'Erreur lors du chargement des notifications'),
             isLoading: false 
           });
         }
@@ -53,7 +109,7 @@ export const useNotificationStore = create<NotificationState>()(
               unreadCount: updatedNotifications.filter(n => !n.read).length
             };
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur lors du marquage comme lu:', error);
           set({ error: 'Erreur lors de la mise à jour' });
         }
@@ -67,7 +123,7 @@ export const useNotificationStore = create<NotificationState>()(
             notifications: state.notifications.map(n => ({ ...n, read: true })),
             unreadCount: 0
           }));
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur lors du marquage global:', error);
           set({ error: 'Erreur lors de la mise à jour' });
         }
@@ -84,8 +140,8 @@ export const useNotificationStore = create<NotificationState>()(
               unreadCount: updatedNotifications.filter(n => !n.read).length
             };
           });
-        } catch (error: any) {
-          console.error('Erreur lors de la suppression:', error);
+        } catch (error: unknown) {
+          console.error('Erreur lors de la suppression globale:', error);
           set({ error: 'Erreur lors de la suppression' });
         }
       },
@@ -94,7 +150,7 @@ export const useNotificationStore = create<NotificationState>()(
         try {
           await api.delete('/notifications');
           set({ notifications: [], unreadCount: 0 });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Erreur lors de la suppression globale:', error);
           set({ error: 'Erreur lors de la suppression' });
         }
@@ -115,7 +171,7 @@ export const useNotificationStore = create<NotificationState>()(
       },
 
       connectWebSocket: () => {
-        const authStore = (window as any).__AUTH_STORE__?.getState?.();
+        const authStore = window.__AUTH_STORE__?.getState?.();
         const token = authStore?.user?.token;
         
         if (!token || ws?.readyState === WebSocket.OPEN) return;

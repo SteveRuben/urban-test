@@ -2,6 +2,38 @@ import { create } from 'zustand';
 import letterService from '../services/letter.service';
 import type { Letter, LetterTemplate } from '../types';
 
+// Interface pour les erreurs API
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
+// Type guard pour vérifier si c'est une erreur API
+function isApiError(error: unknown): error is ApiError {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'response' in error
+  );
+}
+
+// Fonction utilitaire pour extraire le message d'erreur
+function getErrorMessage(error: unknown, defaultMessage: string): string {
+  if (isApiError(error)) {
+    return error.response?.data?.message || defaultMessage;
+  }
+  
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  return defaultMessage;
+}
+
 interface LetterState {
   letters: Letter[];
   letter: Letter | null;
@@ -16,7 +48,7 @@ interface LetterState {
   deleteLetter: (id: string) => Promise<void>;
   
   fetchTemplates: () => Promise<void>;
-  generateFromTemplate: (templateId: string, data: any) => Promise<string>;
+  generateFromTemplate: (templateId: string, data: Record<string, unknown>) => Promise<string>;
   
   clearError: () => void;
 }
@@ -33,8 +65,8 @@ export const useLetterStore = create<LetterState>((set, get) => ({
     try {
       const letters = await letterService.getLetters();
       set({ letters, isLoading: false });
-    } catch (error: any) {
-      set({ error: error.message || 'Erreur lors du chargement des lettres', isLoading: false });
+    } catch (error: unknown) {
+      set({ error: getErrorMessage(error, 'Erreur lors du chargement des lettres'), isLoading: false });
     }
   },
   
@@ -43,8 +75,8 @@ export const useLetterStore = create<LetterState>((set, get) => ({
     try {
       const letter = await letterService.getLetter(id);
       set({ letter, isLoading: false });
-    } catch (error: any) {
-      set({ error: error.message || 'Erreur lors du chargement de la lettre', isLoading: false });
+    } catch (error: unknown) {
+      set({ error: getErrorMessage(error, 'Erreur lors du chargement de la lettre'), isLoading: false });
     }
   },
   
@@ -56,8 +88,8 @@ export const useLetterStore = create<LetterState>((set, get) => ({
       await get().fetchLetters();
       set({ isLoading: false });
       return id;
-    } catch (error: any) {
-      set({ error: error.message || 'Erreur lors de la création de la lettre', isLoading: false });
+    } catch (error: unknown) {
+      set({ error: getErrorMessage(error, 'Erreur lors de la cretion de la lettre'), isLoading: false });
       throw error;
     }
   },
@@ -77,8 +109,9 @@ export const useLetterStore = create<LetterState>((set, get) => ({
       await get().fetchLetters();
       
       set({ isLoading: false });
-    } catch (error: any) {
-      set({ error: error.message || 'Erreur lors de la mise à jour de la lettre', isLoading: false });
+    } catch (error: unknown) {
+      set({ error: getErrorMessage(error, 'Erreur lors de la mise a jour de la lettre'), isLoading: false });
+
     }
   },
   
@@ -90,8 +123,9 @@ export const useLetterStore = create<LetterState>((set, get) => ({
       // Supprimer la lettre de la liste locale
       const letters = get().letters.filter(letter => letter.id !== id);
       set({ letters, letter: null, isLoading: false });
-    } catch (error: any) {
-      set({ error: error.message || 'Erreur lors de la suppression de la lettre', isLoading: false });
+    } catch (error: unknown) {
+      set({ error: getErrorMessage(error, 'Erreur lors de la suppression de la lettre'), isLoading: false });
+
     }
   },
   
@@ -100,12 +134,13 @@ export const useLetterStore = create<LetterState>((set, get) => ({
     try {
       const templates = await letterService.getLetterTemplates();
       set({ templates, isLoading: false });
-    } catch (error: any) {
-      set({ error: error.message || 'Erreur lors du chargement des modèles', isLoading: false });
+    } catch (error: unknown) {
+      set({ error: getErrorMessage(error, 'Erreur lors du chargement des modéles'), isLoading: false });
+
     }
   },
   
-  generateFromTemplate: async (templateId: string, data: any) => {
+  generateFromTemplate: async (templateId: string, data: Record<string, unknown>) => {
     set({ isLoading: true, error: null });
     try {
       const letterId = await letterService.generateLetterFromTemplate(templateId, data);
@@ -113,8 +148,8 @@ export const useLetterStore = create<LetterState>((set, get) => ({
       await get().fetchLetters();
       set({ isLoading: false });
       return letterId;
-    } catch (error: any) {
-      set({ error: error.message || 'Erreur lors de la génération de la lettre', isLoading: false });
+    } catch (error: unknown) {
+      set({ error: getErrorMessage(error, 'Erreur lors de la génération de la lettre'), isLoading: false });
       throw error;
     }
   },

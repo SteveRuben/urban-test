@@ -64,6 +64,7 @@ const CVAnalysisPage: React.FC = () => {
       setAnalysis(result);
       toast.success('Analyse terminée', 'Analyse terminée avec succès');
     } catch (error) {
+      console.log('Erreur', 'Erreur lors de l\'analyse',error)
       toast.error('Erreur', 'Erreur lors de l\'analyse');
     } finally {
       setIsAnalyzing(false);
@@ -82,18 +83,18 @@ const CVAnalysisPage: React.FC = () => {
     return 'bg-red-100';
   };
 
-  const getImpactIcon = (impact: string) => {
-    switch (impact) {
-      case 'high':
-        return <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />;
-      case 'medium':
-        return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />;
-      case 'low':
-        return <ExclamationTriangleIcon className="h-5 w-5 text-blue-500" />;
-      default:
-        return <LightBulbIcon className="h-5 w-5 text-gray-500" />;
-    }
-  };
+  // const getImpactIcon = (impact: string) => {
+  //   switch (impact) {
+  //     case 'high':
+  //       return <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />;
+  //     case 'medium':
+  //       return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />;
+  //     case 'low':
+  //       return <ExclamationTriangleIcon className="h-5 w-5 text-blue-500" />;
+  //     default:
+  //       return <LightBulbIcon className="h-5 w-5 text-gray-500" />;
+  //   }
+  // };
 
   const getRegionFlag = (region: CVRegion) => {
     const flags = {

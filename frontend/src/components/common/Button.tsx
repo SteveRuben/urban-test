@@ -159,6 +159,7 @@ const Button: React.FC<ButtonProps> = ({
 
   // Analytics tracking pour les boutons importants
   const handleClick = (_event: React.MouseEvent) => {
+    console.log(_event)
     if (onClick) {
       onClick();
     }

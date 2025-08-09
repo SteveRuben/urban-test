@@ -2,6 +2,19 @@ import api from './api';
 import type { User, UserCreateData } from '../types';
 import { getAuth, updateProfile as firebaseUpdateProfile } from 'firebase/auth';
 
+interface ApiError {
+  response?: {
+    status: number;
+    data?: unknown;
+  };
+  message: string;
+}
+
+// Type guard to check if error is an API error
+function isApiError(error: unknown): error is ApiError {
+  return typeof error === 'object' && error !== null && 'response' in error;
+}
+
 class AuthService {
   /**
    * Crée un nouvel utilisateur dans Firestore
@@ -17,8 +30,8 @@ class AuthService {
     try {
       await api.get(`/users/${uid}`);
       return true;
-    } catch (error:any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      if (isApiError(error) && error.response?.status === 404) {
         return false;
       }
       throw error;

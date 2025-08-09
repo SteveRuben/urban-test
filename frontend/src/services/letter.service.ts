@@ -102,7 +102,7 @@ class LetterService {
   /**
    * Génère une lettre à partir d'un modèle et de données
    */
-  async generateLetterFromTemplate(templateId: string, data: any): Promise<string> {
+  async generateLetterFromTemplate(templateId: string, data: Record<string, unknown>): Promise<string> {
     try {
       const response = await api.post('/generate-letter', {
         templateId,
@@ -175,11 +175,13 @@ class LetterService {
   /**
    * Gestion d'erreur standardisée
    */
-  private handleError(error: any): Error {
-    if (error.response) {
+  private handleError(error: unknown): Error {
+    const typedError = error as { response?: { status: number; data?: { error?: string } }; request?: unknown; message?: string };
+
+    if (typedError.response) {
       // Erreur avec réponse du serveur
-      const status = error.response.status;
-      const message = error.response.data?.error || 'Une erreur est survenue';
+      const status = typedError.response.status;
+      const message = typedError.response.data?.error || 'Une erreur est survenue';
 
       switch (status) {
         case 400:
@@ -197,12 +199,12 @@ class LetterService {
         default:
           return new Error(`Erreur (${status}): ${message}`);
       }
-    } else if (error.request) {
+    } else if (typedError.request) {
       // Requête envoyée mais pas de réponse
       return new Error('Impossible de contacter le serveur. Veuillez vérifier votre connexion.');
     } else {
       // Erreur dans la configuration de la requête
-      return new Error('Erreur de requête: ' + error.message);
+      return new Error('Erreur de requête: ' + typedError.message);
     }
   }
 
