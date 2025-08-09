@@ -44,7 +44,7 @@ export const LazySection: React.FC<LazySectionProps> = ({
 
   return (
     <div 
-    // @ts-ignore
+    // @ts-expect-error elementRef may not be compatible with HTMLDivElement
       ref={elementRef}
       className={`${getAnimationClass()} ${className}`}
     >

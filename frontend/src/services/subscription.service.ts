@@ -17,11 +17,34 @@ export interface LetterLimit {
   plan: string;
 }
 
+// Interface pour les timestamps Firebase
+interface FirebaseTimestamp {
+  _seconds: number;
+  _nanoseconds: number;
+}
+
+// Interface pour les statistiques d'abonnement
+export interface SubscriptionStats {
+  totalActiveSubscriptions: number;
+  monthlyRevenue: number;
+  churnRate: number;
+  planDistribution: Record<string, number>;
+  aiUsageStats: {
+    totalGenerations: number;
+    averagePerUser: number;
+  };
+  userGrowth: {
+    newThisMonth: number;
+    growthRate: number;
+  };
+}
+
 class SubscriptionService {
 
-  firebaseTimeStamptoDate(params:any): Date {
-    if(params.hasOwnProperty("_seconds")){
-      const milliseconds = params._seconds*1000 + params._nanoseconds/1000000;
+  firebaseTimeStamptoDate(params:unknown): Date {
+    if (params && typeof params === 'object' && '_seconds' in params) {
+      const timestamp = params as FirebaseTimestamp;
+      const milliseconds = timestamp._seconds * 1000 + (timestamp._nanoseconds || 0) / 1000000;
       return new Date(milliseconds);
     }
     return new Date();
@@ -45,15 +68,15 @@ class SubscriptionService {
       }
       
       return subscription;
-    } catch (error: any) {
-      console.error('Erreur récupération abonnement actif:', error);
-      if (error.response?.status === 404) {
-        throw new Error('Aucun abonnement actif trouvé');
-      }
-      throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de la récupération de l\'abonnement'
-      );
+    } catch (error: unknown) {
+      console.error('Erreur...', error);
+  
+      const isAxiosError = error && typeof error === 'object' && 'response' in error;
+      const errorMessage = isAxiosError 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : error instanceof Error ? error.message : 'Erreur inconnue';
+        
+      throw new Error(errorMessage || 'Message d\'erreur par défaut');
     }
   }
 
@@ -64,7 +87,7 @@ class SubscriptionService {
     try {
       const response = await api.get('/subscriptions/plans');
       return response.data.data ;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur récupération plans:', error);
       
       // Retourner des plans par défaut en cas d'erreur
@@ -144,12 +167,14 @@ class SubscriptionService {
     try {
       const response = await api.post('/subscriptions/free');
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur création abonnement gratuit:', error);
-      throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de la création de l\'abonnement gratuit'
-      );
+      const isAxiosError = error && typeof error === 'object' && 'response' in error;
+      const errorMessage = isAxiosError 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : error instanceof Error ? error.message : 'Erreur inconnue';
+        
+      throw new Error(errorMessage || 'Erreur création abonnement gratuit');
     }
   }
 
@@ -161,12 +186,14 @@ class SubscriptionService {
       await api.post(`/subscriptions/${subscriptionId}/cancel`, {
         reason: reason || 'Annulé par l\'utilisateur'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur annulation abonnement:', error);
-      throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de l\'annulation de l\'abonnement'
-      );
+      const isAxiosError = error && typeof error === 'object' && 'response' in error;
+      const errorMessage = isAxiosError 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : error instanceof Error ? error.message : 'Erreur inconnue';
+        
+      throw new Error(errorMessage || 'Erreur annulation abonnement');
     }
   }
 
@@ -179,12 +206,14 @@ class SubscriptionService {
   async reactivateSubscription(subscriptionId: string): Promise<void> {
     try {
       await api.post(`/subscriptions/${subscriptionId}/reactivate`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur réactivation abonnement:', error);
-      throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de la réactivation de l\'abonnement'
-      );
+      const isAxiosError = error && typeof error === 'object' && 'response' in error;
+      const errorMessage = isAxiosError 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : error instanceof Error ? error.message : 'Erreur inconnue';
+        
+      throw new Error(errorMessage || 'Erreur réactivation abonnement');
     }
   }
 
@@ -203,7 +232,7 @@ class SubscriptionService {
         resetDate: data.resetDate ? new Date(data.resetDate) : null,
         plan: data.plan
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur vérification limites IA:', error);
       
       // Retourner des valeurs par défaut pour plan gratuit
@@ -231,7 +260,7 @@ class SubscriptionService {
         limit: data.limit,
         plan: data.plan
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur vérification limites lettres:', error);
       
       // Retourner des valeurs par défaut pour plan gratuit
@@ -250,28 +279,32 @@ class SubscriptionService {
   async incrementAIUsage(): Promise<void> {
     try {
       await api.post('/subscriptions/increment-ai-usage');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur incrémentation IA:', error);
-      throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de l\'incrémentation de l\'utilisation IA'
-      );
+      const isAxiosError = error && typeof error === 'object' && 'response' in error;
+      const errorMessage = isAxiosError 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : error instanceof Error ? error.message : 'Erreur inconnue';
+        
+      throw new Error(errorMessage || 'Erreur incrémentation IA');
     }
   }
 
   /**
    * Récupérer les statistiques d'abonnement
    */
-  async getSubscriptionStats(): Promise<any> {
+  async getSubscriptionStats(): Promise<SubscriptionStats> {
     try {
       const response = await api.get('/subscriptions/stats');
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur récupération stats abonnement:', error);
-      throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de la récupération des statistiques'
-      );
+      const isAxiosError = error && typeof error === 'object' && 'response' in error;
+      const errorMessage = isAxiosError 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : error instanceof Error ? error.message : 'Erreur inconnue';
+        
+      throw new Error(errorMessage || 'Erreur récupération stats abonnemnt');
     }
   }
 
@@ -284,12 +317,14 @@ class SubscriptionService {
         planId: newPlanId
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur changement de plan:', error);
-      throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors du changement de plan'
-      );
+      const isAxiosError = error && typeof error === 'object' && 'response' in error;
+      const errorMessage = isAxiosError 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : error instanceof Error ? error.message : 'Erreur inconnue';
+        
+      throw new Error(errorMessage || 'Erreur changement de plan');
     }
   }
 
@@ -300,7 +335,7 @@ class SubscriptionService {
     try {
       const response = await api.get(`/subscriptions/feature-access/${feature}`);
       return response.data.hasAccess;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur vérification fonctionnalité:', error);
       return false; // Par défaut, pas d'accès
     }
@@ -313,7 +348,7 @@ class SubscriptionService {
     try {
       const response = await api.get('/subscriptions/recommended-plan');
       return response.data.plan;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur récupération plan recommandé:', error);
       return null;
     }
@@ -332,12 +367,14 @@ class SubscriptionService {
         targetPlanId
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur estimation coût upgrade:', error);
-      throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de l\'estimation du coût'
-      );
+      const isAxiosError = error && typeof error === 'object' && 'response' in error;
+      const errorMessage = isAxiosError 
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : error instanceof Error ? error.message : 'Erreur inconnue';
+        
+      throw new Error(errorMessage || 'Erreur estimation de coût upgrade');
     }
   }
 }

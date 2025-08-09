@@ -52,6 +52,17 @@ interface PasswordData {
   confirmPassword: string;
 }
 
+interface UserProfileCompletion {
+  displayName?: string;
+  name?: string;
+  email?: string;
+  phoneNumber?: string;
+  jobTitle?: string;
+  industry?: string;
+  location?: string;
+  bio?: string;
+}
+
 const ProfilePage: React.FC = () => {
   const { user } = useAuthStore();
   const toast = useToast();
@@ -68,7 +79,7 @@ const ProfilePage: React.FC = () => {
     website: '',
     bio: '',
     isEmailVerified: user?.isEmailVerified || false,
-    // @ts-ignore
+    // @ts-expect-error user.metadata.creationTime type may not be fully resolved
     memberSince: user?.metadata?.creationTime || new Date().toISOString(),
     profileViews: 0,
     completionRate: 0
@@ -108,14 +119,42 @@ const ProfilePage: React.FC = () => {
       category: 'user_management'
     });
   }, []);
-
+  const fetchUserProfile = useCallback( async () => {
+    try {
+      const response = await api.get('/users/profile');
+      const profileData = response.data;
+      
+      const updatedUserData = {
+        name: profileData.displayName || user?.displayName || 'Utilisateur',
+        email: profileData.email || user?.email || '',
+        avatar: profileData.photoURL || user?.photoURL || '',
+        phoneNumber: profileData.phoneNumber || '',
+        jobTitle: profileData.jobTitle || '',
+        industry: profileData.industry || 'Informatique / Technologie',
+        location: profileData.location || '',
+        website: profileData.website || '',
+        bio: profileData.bio || '',
+        isEmailVerified: profileData.isEmailVerified || user?.isEmailVerified || false,
+        // @ts-expect-error user.metadata.creationTime type may not be fully resolved
+        memberSince: profileData.memberSince || user?.metadata?.creationTime || new Date().toISOString(),
+        profileViews: profileData.profileViews || Math.floor(Math.random() * 50) + 10,
+        completionRate: calculateProfileCompletion(profileData)
+      };
+      
+      setUserData(updatedUserData);
+      setFormData(updatedUserData);
+    } catch (err: unknown) {
+      console.error('Erreur lors du chargement du profil:', err);
+      toast.error('Erreur', 'Impossible de charger les données du profil');
+    }
+  },[toast, user]);
   // Charger les données utilisateur au montage
   useEffect(() => {
     fetchUserProfile();
-  }, []);
+  }, [fetchUserProfile]);
 
   // Validation en temps réel avec debounce
-  const debouncedValidation = useCallback(
+  const debouncedValidation = 
     debounce((data: UserData) => {
       const errors: Record<string, string> = {};
       
@@ -123,7 +162,7 @@ const ProfilePage: React.FC = () => {
         errors.name = 'Le nom doit contenir au moins 2 caractères';
       }
       
-      if (data.phoneNumber && !/^[\d\s\+\-\(\)]{10,}$/.test(data.phoneNumber.replace(/\s/g, ''))) {
+      if (data.phoneNumber && !/^[\d\s\\+\-\\(\\)]{10,}$/.test(data.phoneNumber.replace(/\s/g, ''))) {
         errors.phoneNumber = 'Numéro de téléphone invalide';
       }
       
@@ -132,9 +171,7 @@ const ProfilePage: React.FC = () => {
       }
       
       setValidationErrors(errors);
-    }, 300),
-    []
-  );
+    }, 300);
 
   useEffect(() => {
     if (isEditing) {
@@ -159,39 +196,22 @@ const ProfilePage: React.FC = () => {
     }
   }, [passwordData.newPassword, calculatePasswordStrength]);
 
-  const fetchUserProfile = async () => {
-    try {
-      const response = await api.get('/users/profile');
-      const profileData = response.data;
-      
-      const updatedUserData = {
-        name: profileData.displayName || user?.displayName || 'Utilisateur',
-        email: profileData.email || user?.email || '',
-        avatar: profileData.photoURL || user?.photoURL || '',
-        phoneNumber: profileData.phoneNumber || '',
-        jobTitle: profileData.jobTitle || '',
-        industry: profileData.industry || 'Informatique / Technologie',
-        location: profileData.location || '',
-        website: profileData.website || '',
-        bio: profileData.bio || '',
-        isEmailVerified: profileData.isEmailVerified || user?.isEmailVerified || false,
-        // @ts-ignore
-        memberSince: profileData.memberSince || user?.metadata?.creationTime || new Date().toISOString(),
-        profileViews: profileData.profileViews || Math.floor(Math.random() * 50) + 10,
-        completionRate: calculateProfileCompletion(profileData)
-      };
-      
-      setUserData(updatedUserData);
-      setFormData(updatedUserData);
-    } catch (err: any) {
-      console.error('Erreur lors du chargement du profil:', err);
-      toast.error('Erreur', 'Impossible de charger les données du profil');
-    }
-  };
+  
 
-  const calculateProfileCompletion = (data: any) => {
-    const fields = ['displayName', 'email', 'phoneNumber', 'jobTitle', 'industry', 'location', 'bio'];
-    const completed = fields.filter(field => data[field] && data[field].trim()).length;
+  const calculateProfileCompletion = (data: UserProfileCompletion) => {
+    const nameField = data.displayName || data.name;
+  
+    const fields = [
+      nameField,
+      data.email,
+      data.phoneNumber,
+      data.jobTitle,
+      data.industry,
+      data.location,
+      data.bio
+    ];
+    
+    const completed = fields.filter(field => field && field.trim()).length;
     return Math.round((completed / fields.length) * 100);
   };
 
@@ -253,7 +273,7 @@ const ProfilePage: React.FC = () => {
         action: 'avatar_uploaded',
         category: 'user_management'
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur lors de l\'upload:', err);
       toast.error('Erreur', 'Impossible de mettre à jour la photo de profil');
     } finally {
@@ -305,9 +325,10 @@ const ProfilePage: React.FC = () => {
         action: 'profile_updated',
         category: 'user_management'
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur lors de la sauvegarde du profil:', err);
-      toast.error('Erreur', err.response?.data?.message || 'Erreur lors de la sauvegarde du profil');
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la sauvegarde du profil';
+      toast.error('Erreur', errorMessage );
     } finally {
       setIsSaving(false);
     }
@@ -352,9 +373,10 @@ const ProfilePage: React.FC = () => {
         action: 'password_changed',
         category: 'security'
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur lors du changement de mot de passe:', err);
-      toast.error('Erreur', err.response?.data?.message || 'Échec de la modification du mot de passe');
+      const errorMessage = err instanceof Error ? err.message : 'Échec de la modification du mot de passe';
+      toast.error('Erreur', errorMessage );
     } finally {
       setIsSaving(false);
     }
@@ -381,9 +403,10 @@ const ProfilePage: React.FC = () => {
       setTimeout(() => {
         window.location.href = '/';
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur lors de la suppression du compte:', err);
-      toast.error('Erreur', err.response?.data?.message || 'Erreur lors de la suppression du compte');
+      const errorMessage = err instanceof Error ? err.message :'Erreur lors de la suppression du compte';
+      toast.error('Erreur', errorMessage );
     } finally {
       setIsSaving(false);
     }
@@ -398,7 +421,7 @@ const ProfilePage: React.FC = () => {
         action: 'verification_email_sent',
         category: 'user_management'
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur lors de l\'envoi de l\'email de vérification:', err);
       toast.error('Erreur', 'Impossible d\'envoyer l\'email de vérification');
     }

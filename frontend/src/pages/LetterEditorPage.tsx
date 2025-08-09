@@ -112,14 +112,15 @@ const LetterEditorPage: React.FC = () => {
           content: letter.content || '',
           status: letter.status || 'draft'
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Erreur lors du chargement de la lettre:', err);
-        setError(`Impossible de charger les données de la lettre: ${err.response?.data?.message || 'Erreur serveur'}`);
+        const errorMessage = err instanceof Error ? err.message : 'Erreur serveur';
+        setError(`Impossible de charger les données de la lettre: ${errorMessage}`);
       }
     };
 
     fetchLetterData();
-  }, [id, isNewLetter]);
+  }, [id, isNewLetter, formData.content]);
 
   // Mise à jour du profil utilisateur
   useEffect(() => {
@@ -211,9 +212,10 @@ const LetterEditorPage: React.FC = () => {
           navigate('/dashboard/letters');
         }, 1500);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving letter:', err);
-      setError(`Erreur lors de l'enregistrement: ${err.response?.data?.message || 'Erreur serveur'}`);
+      const errorMessage = err instanceof Error ? err.message : 'Erreur interne';
+      setError(`Erreur lors de l'enregistrement: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
@@ -226,9 +228,10 @@ const LetterEditorPage: React.FC = () => {
     try {
       await api.delete(`/letters/${id}`);
       navigate('/dashboard/letters');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting letter:', err);
-      setError(`Erreur lors de la suppression: ${err.response?.data?.message || 'Erreur serveur'}`);
+      const errorMessage = err instanceof Error ? err.message : 'Erreur interne';
+      setError(`Erreur lors de la suppression: ${errorMessage}`);
     } finally {
       setIsSaving(false);
       setShowConfirmDialog(false);
@@ -295,9 +298,9 @@ const LetterEditorPage: React.FC = () => {
         navigate(`/dashboard/letters/${response.data.data.letter.id}/edit`);
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error generating AI content:', err);
-      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la génération du contenu IA';
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la génération du contenu IA';
       setError(errorMessage);
       
       // Mode démo en cas d'erreur (pour le développement)

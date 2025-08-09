@@ -18,10 +18,14 @@ export interface ImportMetaEnv {
 export interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
-
+interface StripeInstance {
+  elements(): unknown;
+  confirmCardPayment(clientSecret: string, paymentMethod?: unknown): Promise<unknown>;
+  confirmPayment(options: unknown): Promise<unknown>;
+}
 // Extension de l'interface Window pour les fonctionnalités globales comme Stripe
 declare global {
   interface Window {
-    Stripe?: any;
+    Stripe?: (publishableKey: string) => StripeInstance;
   }
 }

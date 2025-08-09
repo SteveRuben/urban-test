@@ -4,7 +4,7 @@ export interface Notification {
   type: 'success' | 'info' | 'warning' | 'error';
   title: string;
   message: string;
-  data?: any; // Données supplémentaires (ID de lettre, etc.)
+  data?: NotificationData;  // Données supplémentaires (ID de lettre, etc.)
   read: boolean;
   createdAt: string;
   action?: {
@@ -73,3 +73,36 @@ export interface SystemNotificationData {
   featureName?: string;
   description?: string;
 }
+
+// Types pour les différents contextes de notifications
+export interface LetterNotificationData {
+  letterId: string;
+  letterTitle: string;
+}
+
+export interface SubscriptionNotificationData {
+  planName: string;
+  planId?: string;
+  expiresAt?: string;
+}
+
+export interface QuotaNotificationData {
+  used: number;
+  total: number;
+  percentage: number;
+}
+
+export interface SystemNotificationData {
+  startTime?: string;
+  duration?: string;
+  featureName?: string;
+  description?: string;
+}
+
+// Type union pour toutes les données possibles de notifications
+export type NotificationData = 
+  | LetterNotificationData 
+  | SubscriptionNotificationData 
+  | QuotaNotificationData 
+  | SystemNotificationData 
+  | Record<string, unknown>; // Pour les cas non prévus

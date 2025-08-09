@@ -1,16 +1,67 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type {
-  CV,
-  CVListResponse,
-  CreateCVRequest,
-  UpdateCVRequest,
-  CVAnalysis,
-  JobMatching,
-  CVTemplate,
-  CVRegion
+import {
+  type CV,
+  type CVListResponse,
+  type CreateCVRequest,
+  type UpdateCVRequest,
+  type CVAnalysis,
+  type JobMatching,
+  type CVTemplate,
+  CVRegion,
+  CVStyle,
+  CVSectionType
 } from '../types/cv.types';
 import CVService from '../services/cv.service';
+
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
+// Interface pour les filtres de templates
+interface TemplateFilters {
+  region?: CVRegion;
+  style?: string;
+  industry?: string;
+  experienceLevel?: string;
+  
+}
+
+// Interface pour les filtres de CV
+interface CVFilters {
+  status?: string;
+  region?: CVRegion;
+  search?: string;
+}
+
+// Type guard pour vérifier si c'est une erreur API
+function isApiError(error: unknown): error is ApiError {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'response' in error
+  );
+}
+
+// Fonction utilitaire pour extraire le message d'erreur
+function getErrorMessage(error: unknown, defaultMessage: string): string {
+  if (isApiError(error)) {
+    return error.response?.data?.message || defaultMessage;
+  }
+  
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  return defaultMessage;
+}
+
+enum ExperienceLevel { ENTRY = 'entry',MID =  'mid', SENIOR = 'senior' , EXECUTIVE =  'executive'}
 
 interface CVState {
   // État des données
@@ -47,21 +98,23 @@ interface CVState {
     jobTitle: string;
     company?: string;
   }) => Promise<JobMatching>;
-  optimizeCV: (cvId: string, targetJob?: string, targetRegion?: CVRegion) => Promise<any>;
-  adaptCVForRegion: (cvId: string, targetRegion: CVRegion) => Promise<any>;
+  optimizeCV: (cvId: string, targetJob?: string, targetRegion?: CVRegion) => Promise<unknown>;
+  adaptCVForRegion: (cvId: string, targetRegion: CVRegion) => Promise<unknown>;
   
   // Actions templates
-  loadTemplates: (filters?: any) => Promise<void>;
+  loadTemplates: (filters?: TemplateFilters) => Promise<void>;
   
   // Actions export
   exportCV: (cvId: string, format: string) => Promise<string>;
   
   // Actions utilitaires
   setCurrentCV: (cv: CV | null) => void;
-  setFilters: (filters: any) => void;
+  setFilters: (filters: CVFilters) => void;
   clearError: () => void;
   resetStore: () => void;
 }
+
+
 
 export const useCVStore = create<CVState>()(
   persist(
@@ -89,9 +142,10 @@ export const useCVStore = create<CVState>()(
             isLoading: false
           }));
           return newCV;
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = getErrorMessage(error, 'Erreur lors de la creation de CV');
           set({
-            error: error.response?.data?.message || 'Erreur lors de la création du CV',
+            error: errorMessage,
             isLoading: false
           });
           throw error;
@@ -115,9 +169,10 @@ export const useCVStore = create<CVState>()(
             totalCVs: response.total,
             isLoading: false
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = getErrorMessage(error, 'Erreur lors du chargement du CV');
           set({
-            error: error.response?.data?.message || 'Erreur lors du chargement des CV',
+            error: errorMessage,
             isLoading: false
           });
         }
@@ -132,9 +187,10 @@ export const useCVStore = create<CVState>()(
             isLoading: false
           });
           return cv;
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = getErrorMessage(error, 'Erreur lors du chaargement du CV');
           set({
-            error: error.response?.data?.message || 'Erreur lors du chargement du CV',
+            error: errorMessage,
             isLoading: false
           });
           throw error;
@@ -153,9 +209,10 @@ export const useCVStore = create<CVState>()(
           }));
           
           return updatedCV;
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = getErrorMessage(error, 'Erreur lors de la mise a jour du CV');
           set({
-            error: error.response?.data?.message || 'Erreur lors de la mise à jour du CV',
+            error: errorMessage,
             isLoading: false
           });
           throw error;
@@ -173,9 +230,10 @@ export const useCVStore = create<CVState>()(
             totalCVs: state.totalCVs - 1,
             isLoading: false
           }));
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = getErrorMessage(error, 'Erreur lors de la suppression du CV');
           set({
-            error: error.response?.data?.message || 'Erreur lors de la suppression du CV',
+            error: errorMessage,
             isLoading: false
           });
           throw error;
@@ -194,9 +252,10 @@ export const useCVStore = create<CVState>()(
           }));
           
           return duplicatedCV;
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = getErrorMessage(error, 'Erreur lors de la dupplication du CV');
           set({
-            error: error.response?.data?.message || 'Erreur lors de la duplication du CV',
+            error: errorMessage,
             isLoading: false
           });
           throw error;
@@ -221,9 +280,10 @@ export const useCVStore = create<CVState>()(
           }));
           
           return analysis;
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = getErrorMessage(error, 'Erreur lors de l\'analyse du CV');
           set({
-            error: error.response?.data?.message || 'Erreur lors de l\'analyse du CV',
+            error: errorMessage,
             isLoading: false
           });
           throw error;
@@ -252,9 +312,10 @@ export const useCVStore = create<CVState>()(
           }));
           
           return matching;
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = getErrorMessage(error, 'Erreur lors de l\'analyse de correspondance');
           set({
-            error: error.response?.data?.message || 'Erreur lors de l\'analyse de correspondance',
+            error: errorMessage,
             isLoading: false
           });
           throw error;
@@ -267,9 +328,10 @@ export const useCVStore = create<CVState>()(
           const result = await CVService.optimizeCV(cvId, { targetJob, targetRegion });
           set({ isLoading: false });
           return result;
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = getErrorMessage(error, 'Erreur lors de l\'optimisationdu CV');
           set({
-            error: error.response?.data?.message || 'Erreur lors de l\'optimisation du CV',
+            error: errorMessage,
             isLoading: false
           });
           throw error;
@@ -282,9 +344,10 @@ export const useCVStore = create<CVState>()(
           const result = await CVService.adaptCVForRegion(cvId, { targetRegion });
           set({ isLoading: false });
           return result;
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = getErrorMessage(error, 'Erreur lors del\'adaptation originale du CV');
           set({
-            error: error.response?.data?.message || 'Erreur lors de l\'adaptation régionale',
+            error: errorMessage,
             isLoading: false
           });
           throw error;
@@ -301,8 +364,8 @@ export const useCVStore = create<CVState>()(
             templates,
             isLoading: false
           });
-        } catch (error: any) {
-          console.warn('Impossible de charger les templates depuis l\'API, utilisation des templates par défaut');
+        } catch (error: unknown) {
+          console.warn('Impossible de charger les templates depuis l\'API, utilisation des templates par défaut',error);
           
           // Templates par défaut si l'API ne fonctionne pas
           const defaultTemplates = [
@@ -310,10 +373,10 @@ export const useCVStore = create<CVState>()(
               id: 'modern-template',
               name: 'Moderne',
               description: 'Template moderne et épuré, parfait pour les secteurs technologiques',
-              region: 'international',
-              style: 'modern',
+              region: CVRegion.INTERNATIONAL,
+              style: CVStyle.MODERN,
               industry: ['tech', 'marketing', 'design'],
-              experienceLevel: 'mid',
+              experienceLevel: ExperienceLevel.MID,
               isPublic: true,
               isPremium: false,
               creatorId: 'system',
@@ -321,8 +384,8 @@ export const useCVStore = create<CVState>()(
               rating: 4.8,
               tags: ['moderne', 'tech', 'épuré'],
               culturalNotes: ['Format international', 'Design contemporain'],
-              requiredSections: ['personal_info', 'work_experience', 'education', 'skills'],
-              optionalSections: ['projects', 'languages', 'certifications'],
+              requiredSections: [CVSectionType.PERSONAL_INFO, CVSectionType.WORK_EXPERIENCE, CVSectionType.EDUCATION, CVSectionType.SKILLS],
+              optionalSections: [CVSectionType.PROJECTS, CVSectionType.LANGUAGES, CVSectionType.CERTIFICATIONS],
               prohibitedElements: [],
               createdAt: new Date(),
               updatedAt: new Date()
@@ -331,10 +394,10 @@ export const useCVStore = create<CVState>()(
               id: 'classic-template',
               name: 'Classique',
               description: 'Template traditionnel et professionnel, adapté à tous les secteurs',
-              region: 'france',
-              style: 'classic',
+              region: CVRegion.FRANCE,
+              style: CVStyle.CLASSIC,
               industry: ['finance', 'legal', 'consulting'],
-              experienceLevel: 'senior',
+              experienceLevel: ExperienceLevel.SENIOR,
               isPublic: true,
               isPremium: false,
               creatorId: 'system',
@@ -342,8 +405,8 @@ export const useCVStore = create<CVState>()(
               rating: 4.6,
               tags: ['classique', 'professionnel', 'traditionnel'],
               culturalNotes: ['Format français standard', 'Présentation formelle'],
-              requiredSections: ['personal_info', 'work_experience', 'education'],
-              optionalSections: ['skills', 'languages', 'hobbies'],
+              requiredSections: [CVSectionType.PERSONAL_INFO, CVSectionType.WORK_EXPERIENCE, CVSectionType.EDUCATION],
+              optionalSections: [CVSectionType.SKILLS, CVSectionType.LANGUAGES, CVSectionType.HOBBIES],
               prohibitedElements: [],
               createdAt: new Date(),
               updatedAt: new Date()
@@ -352,10 +415,10 @@ export const useCVStore = create<CVState>()(
               id: 'creative-template',
               name: 'Créatif',
               description: 'Template créatif et coloré, idéal pour les métiers artistiques',
-              region: 'international',
-              style: 'creative',
+              region: CVRegion.INTERNATIONAL,
+              style: CVStyle.CREATIVE,
               industry: ['design', 'marketing', 'media'],
-              experienceLevel: 'entry',
+              experienceLevel: ExperienceLevel.ENTRY,
               isPublic: true,
               isPremium: true,
               creatorId: 'system',
@@ -363,8 +426,8 @@ export const useCVStore = create<CVState>()(
               rating: 4.9,
               tags: ['créatif', 'coloré', 'artistique'],
               culturalNotes: ['Design innovant', 'Mise en page créative'],
-              requiredSections: ['personal_info', 'work_experience', 'skills'],
-              optionalSections: ['projects', 'portfolio', 'certifications'],
+              requiredSections: [CVSectionType.PERSONAL_INFO, CVSectionType.WORK_EXPERIENCE, CVSectionType.SKILLS],
+              optionalSections: [CVSectionType.PROJECTS, CVSectionType.PROFESSIONAL_SUMMARY, CVSectionType.CERTIFICATIONS],
               prohibitedElements: [],
               createdAt: new Date(),
               updatedAt: new Date()
@@ -373,10 +436,10 @@ export const useCVStore = create<CVState>()(
               id: 'minimal-template',
               name: 'Minimaliste',
               description: 'Template épuré et minimaliste, focus sur le contenu',
-              region: 'international',
-              style: 'minimal',
+              region: CVRegion.INTERNATIONAL,
+              style: CVStyle.MINIMAL,
               industry: ['tech', 'consulting', 'research'],
-              experienceLevel: 'mid',
+              experienceLevel: ExperienceLevel.MID,
               isPublic: true,
               isPremium: false,
               creatorId: 'system',
@@ -384,14 +447,14 @@ export const useCVStore = create<CVState>()(
               rating: 4.7,
               tags: ['minimaliste', 'épuré', 'simple'],
               culturalNotes: ['Design épuré', 'Focus sur le contenu'],
-              requiredSections: ['personal_info', 'work_experience', 'education', 'skills'],
-              optionalSections: ['languages', 'certifications'],
+              requiredSections: [CVSectionType.PERSONAL_INFO, CVSectionType.WORK_EXPERIENCE, CVSectionType.EDUCATION, CVSectionType.SKILLS],
+              optionalSections: [CVSectionType.LANGUAGES, CVSectionType.CERTIFICATIONS],
               prohibitedElements: [],
               createdAt: new Date(),
               updatedAt: new Date()
             }
           ];
-          
+
           set({
             templates: defaultTemplates,
             isLoading: false,
@@ -407,9 +470,10 @@ export const useCVStore = create<CVState>()(
           const exportResult = await CVService.exportCV(cvId, format);
           set({ isLoading: false });
           return exportResult.downloadUrl;
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = getErrorMessage(error, 'Erreur lors de l\'exportation du CV');
           set({
-            error: error.response?.data?.message || 'Erreur lors de l\'export du CV',
+            error: errorMessage,
             isLoading: false
           });
           throw error;
@@ -421,7 +485,7 @@ export const useCVStore = create<CVState>()(
         set({ currentCV: cv });
       },
 
-      setFilters: (filters: any) => {
+      setFilters: (filters: CVFilters) => {
         set({ filters });
       },
 

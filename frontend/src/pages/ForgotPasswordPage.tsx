@@ -67,6 +67,7 @@ const ForgotPasswordPage: React.FC = () => {
         category: 'auth'
       });
     } catch (error) {
+      console.log('Échec de l\'envoi des instructions. Veuillez vérifier votre adresse email et réessayer.',error)
       setError('Échec de l\'envoi des instructions. Veuillez vérifier votre adresse email et réessayer.');
       analytics.track({
         action: 'password_reset_failed',

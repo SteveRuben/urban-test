@@ -7,10 +7,28 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
+interface DebugInfo {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  isInitialized: boolean;
+  componentInitialized: boolean;
+  hasUser: boolean;
+  userEmail: string | undefined;
+  timestamp: string;
+}
+
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
   const [componentInitialized, setComponentInitialized] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>({});
+  const [debugInfo, setDebugInfo] = useState<DebugInfo>({
+    isAuthenticated: false,
+    isLoading: false,
+    isInitialized: false,
+    componentInitialized: false,
+    hasUser: false,
+    userEmail: undefined,
+    timestamp: '',
+  });
   
   // Utiliser le hook complet pour forcer la réactivité
   const authState = useAuthStore();

@@ -11,9 +11,79 @@ import type {
   CVOptimizationRequest,
   CVRegionAdaptationRequest,
   CVExport,
-  CVExportRequest,
+  // CVExportRequest,
   CVTemplate
 } from '../types/cv.types';
+
+interface CVAnalysisResponse {
+  analysis: CVAnalysis;
+  metadata: ApiResponseMetadata;
+}
+
+interface JobMatchingResponse {
+  matching: JobMatching;
+  metadata: ApiResponseMetadata;
+}
+
+interface CVOptimizationResponse {
+  suggestions: CVOptimizationSuggestions;
+  cvId: string;
+  metadata: ApiResponseMetadata;
+}
+
+interface CVRegionAdaptationResponse {
+  adaptedCV: AdaptedCV;
+  metadata: ApiResponseMetadata;
+}
+
+interface JobAnalysisData {
+  title?: string;
+  description?: string;
+  requirements?: string[];
+  company?: string;
+  location?: string;
+  skills?: string[];
+  [key: string]: unknown;
+}
+
+interface CVUploadAnalysisData {
+  extractedText?: string;
+  analysis?: Partial<CVAnalysis>;
+  suggestions?: string[];
+  [key: string]: unknown;
+}
+
+interface CVStatsData {
+  totalCVs?: number;
+  activeApplications?: number;
+  matchingScore?: number;
+  viewsCount?: number;
+  downloadsCount?: number;
+  [key: string]: unknown;
+}
+
+// Generic types for common response structures
+interface ApiResponseMetadata {
+  processingTime?: number;
+  version?: string;
+  timestamp?: string;
+  [key: string]: unknown;
+}
+
+interface CVOptimizationSuggestions {
+  skills?: string[];
+  content?: string[];
+  formatting?: string[];
+  keywords?: string[];
+  [key: string]: unknown;
+}
+
+interface AdaptedCV {
+  sections?: Record<string, unknown>;
+  formatting?: Record<string, unknown>;
+  content?: Record<string, unknown>;
+  [key: string]: unknown;
+}
 
 export class CVService {
   private static readonly BASE_URL = '/cv';
@@ -73,10 +143,7 @@ export class CVService {
   /**
    * Analyser un CV avec l'IA
    */
-  static async analyzeCV(cvId: string, data?: CVAnalysisRequest): Promise<{
-    analysis: CVAnalysis;
-    metadata: any;
-  }> {
+  static async analyzeCV(cvId: string, data?: CVAnalysisRequest): Promise<CVAnalysisResponse> {
     const response = await api.post(`${this.BASE_URL}/${cvId}/analyze`, data);
     return {
       analysis: response.data.data,
@@ -87,10 +154,7 @@ export class CVService {
   /**
    * Analyser la correspondance avec une offre d'emploi
    */
-  static async analyzeJobMatching(cvId: string, data: JobMatchingRequest): Promise<{
-    matching: JobMatching;
-    metadata: any;
-  }> {
+  static async analyzeJobMatching(cvId: string, data: JobMatchingRequest): Promise<JobMatchingResponse> {
     const response = await api.post(`${this.BASE_URL}/${cvId}/job-matching`, data);
     return {
       matching: response.data.data,
@@ -101,11 +165,7 @@ export class CVService {
   /**
    * Optimiser un CV avec l'IA
    */
-  static async optimizeCV(cvId: string, data?: CVOptimizationRequest): Promise<{
-    suggestions: any;
-    cvId: string;
-    metadata: any;
-  }> {
+  static async optimizeCV(cvId: string, data?: CVOptimizationRequest): Promise<CVOptimizationResponse> {
     const response = await api.post(`${this.BASE_URL}/${cvId}/optimize`, data);
     return response.data;
   }
@@ -113,10 +173,7 @@ export class CVService {
   /**
    * Adapter un CV pour une région
    */
-  static async adaptCVForRegion(cvId: string, data: CVRegionAdaptationRequest): Promise<{
-    adaptedCV: any;
-    metadata: any;
-  }> {
+  static async adaptCVForRegion(cvId: string, data: CVRegionAdaptationRequest): Promise<CVRegionAdaptationResponse> {
     const response = await api.post(`${this.BASE_URL}/${cvId}/adapt-region`, data);
     return response.data;
   }
@@ -148,7 +205,7 @@ export class CVService {
   /**
    * Analyser une URL d'offre d'emploi
    */
-  static async analyzeJobURL(data: { url: string; cvId?: string }): Promise<any> {
+  static async analyzeJobURL(data: { url: string; cvId?: string }): Promise<JobAnalysisData> {
     const response = await api.post(`${this.BASE_URL}/jobs/analyze-url`, data);
     return response.data.data;
   }
@@ -156,7 +213,7 @@ export class CVService {
   /**
    * Upload et analyser un CV existant
    */
-  static async uploadAndAnalyzeCV(file: File): Promise<any> {
+  static async uploadAndAnalyzeCV(file: File): Promise<CVUploadAnalysisData> {
     const formData = new FormData();
     formData.append('cv', file);
     
@@ -171,7 +228,7 @@ export class CVService {
   /**
    * Obtenir les statistiques CV de l'utilisateur
    */
-  static async getUserCVStats(period: string = 'month'): Promise<any> {
+  static async getUserCVStats(period: string = 'month'): Promise<CVStatsData> {
     const response = await api.get(`${this.BASE_URL}/stats`, {
       params: { period }
     });

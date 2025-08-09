@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { useCVStore } from '../store/cv.store';
-import { CVRegion, CVStyle, type CVTemplate } from '../types/cv.types';
+import { CVRegion, CVSectionType, CVStyle, type CVTemplate } from '../types/cv.types';
 import { useToast } from '../store/toast.store';
 import DashboardLayout from '../components/layout/DashboardLayout';
+
+type ExperienceLevel =  |'entry' | 'mid' | 'senior' | 'executive'
 
 const CVCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -21,7 +23,7 @@ const CVCreatePage: React.FC = () => {
   });
 
   const [filteredTemplates, setFilteredTemplates] = useState<CVTemplate[]>([]);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  // const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   useEffect(() => {
     loadTemplates();
@@ -52,8 +54,8 @@ const CVCreatePage: React.FC = () => {
         rating: 4.8,
         tags: ['moderne', 'épuré', 'universel'],
         culturalNotes: ['Adapté à tous les pays', 'Design contemporain'],
-        requiredSections: ['personal_info', 'work_experience', 'education', 'skills'] as any,
-        optionalSections: ['projects', 'languages', 'certifications'] as any,
+        requiredSections: ['personal_info', 'work_experience', 'education', 'skills'] as CVSectionType[],
+        optionalSections: ['projects', 'languages', 'certifications'] as CVSectionType[],
         prohibitedElements: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -74,8 +76,8 @@ const CVCreatePage: React.FC = () => {
         rating: 4.6,
         tags: ['classique', 'professionnel', 'traditionnel'],
         culturalNotes: ['Format standard', 'Présentation formelle'],
-        requiredSections: ['personal_info', 'work_experience', 'education'] as any,
-        optionalSections: ['skills', 'languages', 'hobbies'] as any,
+        requiredSections: ['personal_info', 'work_experience', 'education'] as CVSectionType[],
+        optionalSections: ['skills', 'languages', 'hobbies'] as CVSectionType[],
         prohibitedElements: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -96,8 +98,8 @@ const CVCreatePage: React.FC = () => {
         rating: 4.9,
         tags: ['créatif', 'original', 'artistique'],
         culturalNotes: ['Design innovant', 'Mise en page créative'],
-        requiredSections: ['personal_info', 'work_experience', 'skills'] as any,
-        optionalSections: ['projects', 'portfolio', 'certifications'] as any,
+        requiredSections: ['personal_info', 'work_experience', 'skills'] as CVSectionType[],
+        optionalSections: ['projects', 'portfolio', 'certifications'] as CVSectionType[],
         prohibitedElements: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -125,35 +127,35 @@ const CVCreatePage: React.FC = () => {
     setFilteredTemplates(combinedTemplates);
   }, [templates, formData.region, formData.style, formData.experienceLevel]);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Vérifier le type de fichier
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'image/jpeg',
-        'image/jpg',
-        'image/png'
-      ];
+  // const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = event.target.files?.[0];
+  //   if (file) {
+  //     // Vérifier le type de fichier
+  //     const allowedTypes = [
+  //       'application/pdf',
+  //       'application/msword',
+  //       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  //       'image/jpeg',
+  //       'image/jpg',
+  //       'image/png'
+  //     ];
 
-      if (!allowedTypes.includes(file.type)) {
-        toast.error('Format non supporté', 'Utilisez PDF, Word ou Image.');
-        return;
-      }
+  //     if (!allowedTypes.includes(file.type)) {
+  //       toast.error('Format non supporté', 'Utilisez PDF, Word ou Image.');
+  //       return;
+  //     }
 
-      // Vérifier la taille (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error('Fichier trop volumineux', 'Maximum 10MB.');
-        return;
-      }
+  //     // Vérifier la taille (max 10MB)
+  //     if (file.size > 10 * 1024 * 1024) {
+  //       toast.error('Fichier trop volumineux', 'Maximum 10MB.');
+  //       return;
+  //     }
 
-      setUploadedFile(file);
-      setFormData({ ...formData, templateId: 'import' });
-      toast.success('Fichier importé', 'Fichier importé avec succès !');
-    }
-  };
+  //     setUploadedFile(file);
+  //     setFormData({ ...formData, templateId: 'import' });
+  //     toast.success('Fichier importé', 'Fichier importé avec succès !');
+  //   }
+  // };
 
   const handleCreateCV = async () => {
     if (!formData.title.trim()) {
@@ -169,7 +171,7 @@ const CVCreatePage: React.FC = () => {
     try {
       let newCV;
 
-      if (formData.templateId === 'import' && uploadedFile) {
+      if (formData.templateId === 'import' ) { //&& uploadedFile
         // Logique d'import de fichier (à implémenter avec l'API)
         toast.info('Analyse en cours', 'Analyse du fichier en cours...');
 
@@ -379,7 +381,7 @@ const CVCreatePage: React.FC = () => {
                       <button
                         key={level.value}
                         type="button"
-                        onClick={() => setFormData({ ...formData, experienceLevel: level.value as any })}
+                        onClick={() => setFormData({ ...formData, experienceLevel: level.value as ExperienceLevel })}
                         className={`p-4 border rounded-lg text-center transition-colors ${formData.experienceLevel === level.value
                           ? 'border-purple-500 bg-purple-50 text-purple-700'
                           : 'border-gray-300 hover:border-gray-400'

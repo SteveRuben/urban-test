@@ -21,10 +21,15 @@ import { useAuthStore } from '../store/auth.store';
 import api from '../services/api';
 import type { Letter } from '../types';
 
+interface FirebaseTimestamp {
+  _seconds: number;
+  _nanoseconds?: number;
+}
 
-const firebaseTimeStamptoDate = (params: any) => {
-  if (params.hasOwnProperty("_seconds")) {
-    const milliseconds = params._seconds * 1000 + params._nanoseconds / 1000000;
+const firebaseTimeStamptoDate = (params:  FirebaseTimestamp | unknown) => {
+  if (!params) return new Date();
+  if (typeof params === 'object' && params !== null && '_seconds' in params) {
+    const milliseconds = (params as FirebaseTimestamp)._seconds * 1000 + ((params as FirebaseTimestamp)._nanoseconds || 0) / 1000000;
     return new Date(milliseconds);
   }
   return new Date();
@@ -66,13 +71,16 @@ const LettersPage: React.FC = () => {
           // Tentative de récupération des lettres depuis l'API
           const response = await api.get('/letters');
           setLetters(response.data.data.letters);
-        } catch (apiError: any) {
+        } catch (apiError: unknown) {
           console.warn('Impossible de récupérer les lettres depuis l\'API, utilisation des données de démonstration', apiError);
 
-          // Pour les erreurs d'authentification, ne pas afficher d'erreur à l'utilisateur
-          if (apiError.response?.status !== 401 && apiError.response?.status !== 403) {
+        // Pour les erreurs d'authentification, ne pas afficher d'erreur à l'utilisateur
+        if (apiError instanceof Error && 'response' in apiError) {
+          const errorResponse = (apiError as { response?: { status?: number } }).response;
+          if (errorResponse?.status !== 401 && errorResponse?.status !== 403) {
             setError('Impossible de charger vos lettres depuis le serveur. Affichage des données de démonstration.');
           }
+        }
         }
       } finally {
         setIsLoading(false);
@@ -133,9 +141,10 @@ const LettersPage: React.FC = () => {
       await api.delete(`/letters/${id}`);
       // Mettre à jour la liste après suppression
       setLetters(letters.filter(letter => letter.id !== id));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur lors de la suppression de la lettre:', err);
-      alert(err.response?.data?.error || 'Erreur lors de la suppression de la lettre');
+      const errorMessage = err instanceof Error ? err.message : 'Impossible d\'exporter le CV';
+      alert(errorMessage || 'Erreur lors de la suppression de la lettre');
     }
 
   };

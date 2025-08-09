@@ -12,7 +12,7 @@ export * from './ui.types';
 export * from './notification.types';
 
 // Tout autre type partagé ou types utilitaires
-export type ApiResponse<T = any> = {
+export type ApiResponse<T = unknown> = {
   data: T;
   status: number;
   message?: string;

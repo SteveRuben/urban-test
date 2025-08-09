@@ -28,6 +28,11 @@ import {
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { FaBriefcase, FaCertificate, FaCogs, FaFileAlt, FaGraduationCap, FaHeart, FaLanguage, FaMapMarkerAlt, FaProjectDiagram, FaStar, FaUser, FaUsers } from 'react-icons/fa';
 
+type Category = |'technical' | 'soft' | 'language' | 'other'
+type TypeWork = |'full-time' | 'part-time' | 'contract' | 'internship' | 'volunteer'
+type Level = | 1 | 2 | 3 | 4 | 5 
+type LanguageLevel = |'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2' | 'Native'
+
 const CVEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -80,6 +85,7 @@ const CVEditorPage: React.FC = () => {
       setHasUnsavedChanges(false);
       toast.success('CV sauvegardé', 'CV sauvegardé avec succès');
     } catch (error) {
+      console.log('Erreur', 'Erreur lors de la sauvegarde',error)
       toast.error('Erreur', 'Erreur lors de la sauvegarde');
     }
   };
@@ -92,11 +98,12 @@ const CVEditorPage: React.FC = () => {
       window.open(downloadUrl, '_blank');
       toast.success('Export réussi', 'Export généré avec succès');
     } catch (error) {
+      console.log('Erreur', 'Erreur lors de l\'export',error)
       toast.error('Erreur', 'Erreur lors de l\'export');
     }
   };
 
-  const updatePersonalInfo = (field: keyof CVPersonalInfo, value: any) => {
+  const updatePersonalInfo = (field: keyof CVPersonalInfo, value: string | Date | undefined) => {
     if (!editingCV) return;
 
     const updatedCV = {
@@ -925,7 +932,7 @@ const SectionPreview: React.FC<{ section: CVUserSection }> = ({ section }) => {
 // Composant d'édition des informations personnelles
 const PersonalInfoEditor: React.FC<{
   personalInfo: CVPersonalInfo;
-  onChange: (field: keyof CVPersonalInfo, value: any) => void;
+  onChange: (field: keyof CVPersonalInfo, value: string | Date | undefined) => void;
 }> = ({ personalInfo, onChange }) => {
   return (
     <div>
@@ -1194,7 +1201,7 @@ const WorkExperienceEditor: React.FC<{
                 </label>
                 <select
                   value={exp.type}
-                  onChange={(e) => updateWorkExperience(index, { ...exp, type: e.target.value as any })}
+                  onChange={(e) => updateWorkExperience(index, { ...exp, type: e.target.value as TypeWork })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="full-time">Temps plein</option>
@@ -1693,7 +1700,7 @@ const SkillsEditor: React.FC<{
                   <div className="w-32">
                     <select
                       value={skill.category}
-                      onChange={(e) => updateSkill(index, { ...skill, category: e.target.value as any })}
+                      onChange={(e) => updateSkill(index, { ...skill, category: e.target.value as Category })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="technical">Technique</option>
@@ -1706,7 +1713,7 @@ const SkillsEditor: React.FC<{
                   <div className="w-24">
                     <select
                       value={skill.level}
-                      onChange={(e) => updateSkill(index, { ...skill, level: parseInt(e.target.value) as any })}
+                      onChange={(e) => updateSkill(index, { ...skill, level: parseInt(e.target.value) as Level })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value={1}>Débutant</option>
@@ -1830,7 +1837,7 @@ const LanguagesEditor: React.FC<{
             <div className="w-32">
               <select
                 value={language.level}
-                onChange={(e) => updateLanguage(index, { ...language, level: e.target.value as any })}
+                onChange={(e) => updateLanguage(index, { ...language, level: e.target.value as LanguageLevel })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="A1">A1 - Débutant</option>

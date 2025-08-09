@@ -3,6 +3,39 @@ import api from './api';
 import type { Payment,  } from '../types';
 import type { PaymentStats } from '../store';
 
+// Interface pour les erreurs API
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+    status?: number;
+  };
+  message?: string;
+}
+
+// Type guard pour vérifier si c'est une erreur API
+function isApiError(error: unknown): error is ApiError {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'response' in error
+  );
+}
+
+// Fonction utilitaire pour extraire le message d'erreur
+function getErrorMessage(error: unknown, defaultMessage: string): string {
+  if (isApiError(error)) {
+    return error.response?.data?.message || defaultMessage;
+  }
+  
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  return defaultMessage;
+}
+
 export interface PayPalSessionData {
   sessionId: string;
   approvalUrl: string;
@@ -39,11 +72,10 @@ class PaymentService {
       });
 
       return response.data.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur création session PayPal:', error);
       throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de la création de la session de paiement PayPal'
+        getErrorMessage(error, 'Erreur lors de la création de la session de paiement PayPal')
       );
     }
   }
@@ -62,11 +94,10 @@ class PaymentService {
       });
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur confirmation PayPal:', error);
       throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de la confirmation du paiement PayPal'
+        getErrorMessage(error, 'Erreur lors de la confirmation du paiement PayPal')
       );
     }
   }
@@ -83,11 +114,10 @@ class PaymentService {
         paymentId,
         reason: reason || 'Annulé par l\'utilisateur'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur annulation PayPal:', error);
       throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de l\'annulation du paiement PayPal'
+        getErrorMessage(error, 'Erreur lors de l\'annulation du paiement PayPal')
       );
     }
   }
@@ -102,14 +132,13 @@ class PaymentService {
       });
 
       return response.data.payments || response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur récupération historique:', error);
-      if (error.response?.status === 404) {
+      if (isApiError(error) && error.response?.status === 404) {
         return []; // Pas d'historique
       }
       throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de la récupération de l\'historique des paiements'
+        getErrorMessage(error, 'Erreur lors de la récupération de l\'historique des paiements')
       );
     }
   }
@@ -121,11 +150,10 @@ class PaymentService {
     try {
       const response = await api.get('/payments/stats');
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur récupération stats:', error);
       throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de la récupération des statistiques'
+        getErrorMessage(error, 'Erreur lors de la récupération des statistiques')
       );
     }
   }
@@ -137,11 +165,10 @@ class PaymentService {
     try {
       const response = await api.get(`/payments/${paymentId}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur récupération paiement:', error);
       throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de la récupération du paiement'
+        getErrorMessage(error, 'Erreur lors de la récupération du paiement')
       );
     }
   }
@@ -164,11 +191,10 @@ class PaymentService {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur téléchargement reçu:', error);
       throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors du téléchargement du reçu'
+        getErrorMessage(error, 'Erreur lors du téléchargement du reçu')
       );
     }
   }
@@ -180,11 +206,10 @@ class PaymentService {
     try {
       const response = await api.get(`/payments/${paymentId}/status`);
       return response.data.status;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur vérification statut:', error);
       throw new Error(
-        error.response?.data?.message || 
-        'Erreur lors de la vérification du statut du paiement'
+        getErrorMessage(error, 'Erreur lors de la vérification du statut du paiement')
       );
     }
   }
@@ -213,11 +238,11 @@ class PaymentService {
       window.history.replaceState({}, document.title, window.location.pathname);
 
       return { success: true, paymentId };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur traitement retour PayPal:', error);
       return { 
         success: false, 
-        error: error.message || 'Erreur lors du traitement du retour PayPal' 
+        error: getErrorMessage(error, 'Erreur lors du traitement du retour PayPal')
       };
     }
   }
@@ -266,7 +291,7 @@ class PaymentService {
   async createPaymentIntent(planId: string): Promise<{ clientSecret: string }> {
     console.warn('createPaymentIntent est déprécié, utilisez createPayPalSession');
     
-    try {
+    // try {
       // Rediriger vers PayPal pour les nouveaux paiements
       const session = await this.createPayPalSession(planId, 'monthly');
       
@@ -277,9 +302,9 @@ class PaymentService {
       
       // Retourner un format compatible pour éviter les erreurs
       return { clientSecret: session.sessionId };
-    } catch (error) {
-      throw error;
-    }
+    // } catch (error) {
+    //   throw error;
+    // }
   }
 }
 

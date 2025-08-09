@@ -1,7 +1,18 @@
-import { useEffect, useState } from "react";
-
+import { useEffect, useState, type DependencyList } from "react";
+// Fonction utilitaire pour extraire le message d'erreur
+function getErrorMessage(error: unknown, defaultMessage: string = 'Une erreur est survenue'): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  return defaultMessage;
+}
 // src/utils/performance.ts
-export const debounce = <T extends (...args: any[]) => void>(
+export const debounce = <T extends (...args: unknown[]) => void>(
   func: T,
   delay: number
 ): ((...args: Parameters<T>) => void) => {
@@ -13,7 +24,7 @@ export const debounce = <T extends (...args: any[]) => void>(
   };
 };
 
-export const throttle = <T extends (...args: any[]) => void>(
+export const throttle = <T extends (...args: unknown[]) => void>(
   func: T,
   limit: number
 ): ((...args: Parameters<T>) => void) => {
@@ -28,10 +39,9 @@ export const throttle = <T extends (...args: any[]) => void>(
   };
 };
 
-// Hook pour les requêtes API optimisées
 export const useOptimizedFetch = <T>(
   fetchFn: () => Promise<T>,
-  dependencies: any[] = [],
+  dependencies: DependencyList = [],
   options: {
     retries?: number;
     retryDelay?: number;
@@ -67,13 +77,13 @@ export const useOptimizedFetch = <T>(
             }));
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (mounted) {
           if (retryCount < retries) {
             retryCount++;
             setTimeout(fetchData, retryDelay * retryCount);
           } else {
-            setError(err.message || 'Une erreur est survenue');
+            setError(getErrorMessage(err));
           }
         }
       } finally {
@@ -109,7 +119,8 @@ export const useOptimizedFetch = <T>(
     return () => {
       mounted = false;
     };
-  }, dependencies);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchFn, retries, retryDelay, cache, ...dependencies]);
 
   return { data, loading, error };
 };

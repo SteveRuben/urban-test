@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   PlusIcon,
   DocumentTextIcon,
@@ -11,12 +11,12 @@ import {
   ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { useCVStore } from '../store/cv.store';
-import { type CV, CVRegion } from '../types/cv.types';
+import {  CVRegion } from '../types/cv.types';
 import { useToastStore } from '../store/toast.store';
 import DashboardLayout from '../components/layout/DashboardLayout';
 
 const CVsPage: React.FC = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { addToast } = useToastStore();
   const {
     cvs,
@@ -34,7 +34,7 @@ const CVsPage: React.FC = () => {
     clearError
   } = useCVStore();
 
-  const [selectedCVs, setSelectedCVs] = useState<string[]>([]);
+  // const [selectedCVs, setSelectedCVs] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,6 +54,7 @@ const CVsPage: React.FC = () => {
       addToast('CV supprimé avec succès', 'success');
       setShowDeleteModal(null);
     } catch (error) {
+      console.log('Erreur lors de la suppression',error)
       addToast('Erreur lors de la suppression', 'error');
     }
   };
@@ -63,6 +64,7 @@ const CVsPage: React.FC = () => {
       await duplicateCV(cvId, `${title} - Copie`);
       addToast('CV dupliqué avec succès', 'success');
     } catch (error) {
+      console.log('Erreur lors de la duplication',error)
       addToast('Erreur lors de la duplication', 'error');
     }
   };
@@ -73,11 +75,12 @@ const CVsPage: React.FC = () => {
       window.open(downloadUrl, '_blank');
       addToast('Export généré avec succès', 'success');
     } catch (error) {
+      console.log('Erreur lors de l\'export',error)
       addToast('Erreur lors de l\'export', 'error');
     }
   };
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (key: string, value: string | Date | undefined) => {
     setFilters({ ...filters, [key]: value });
     loadUserCVs(1);
   };

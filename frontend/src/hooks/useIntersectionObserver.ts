@@ -29,7 +29,7 @@ export const useIntersectionObserver = (
     observer.observe(element);
 
     return () => observer.disconnect();
-  }, []);
+  }, [options]);
 
   return { elementRef, isIntersecting, hasIntersected };
 };

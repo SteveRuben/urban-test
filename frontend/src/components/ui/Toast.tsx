@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FaCheck, FaExclamationTriangle, FaInfoCircle, FaTimes } from 'react-icons/fa';
 import { useToastStore } from '../../store/toast.store';
 
@@ -24,6 +24,13 @@ interface ToastItemProps {
 const ToastItem: React.FC<ToastItemProps> = ({ toast, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  
+  const handleClose = useCallback( () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onClose(toast.id);
+    }, 300);
+  },[toast.id,onClose]);
 
   useEffect(() => {
     // Animation d'entrée
@@ -37,14 +44,9 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onClose }) => {
 
       return () => clearTimeout(timer);
     }
-  }, [toast.duration]);
+  }, [toast.duration,handleClose]);
 
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onClose(toast.id);
-    }, 300);
-  };
+  
 
   const getIcon = () => {
     switch (toast.type) {

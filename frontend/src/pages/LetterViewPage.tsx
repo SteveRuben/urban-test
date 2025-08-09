@@ -55,7 +55,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import Button from '../components/common/Button';
 import { LazySection } from '../components/performance/LazySection';
 import { useLetterStore } from '../store/letter.store';
-import { useAuthStore } from '../store/auth.store';
+// import { useAuthStore } from '../store/auth.store';
 import { useSubscriptionStore } from '../store/subscription.store';
 import { useToast } from '../store/toast.store';
 import { analytics } from '../utils/analytics';
@@ -63,12 +63,19 @@ import { debounce } from '../utils/performance';
 import MetaTags from '../components/SEO/MetaTags';
 import { ErrorBoundary } from '../components/layout/ErrorBoundary';
 import { letterService } from '../services';
-import type { AIAnalysis, ExportOptions, LetterMetadata, LetterStats, ShareOptions, UIState, VersionHistory } from '../types';
+import type { AIAnalysis, ExportOptions, Letter, LetterMetadata, LetterStats, ShareOptions, UIState, VersionHistory } from '../types';
 
-const firebaseTimeStamptoDate = (params: any) => {
-  if(!params) return new Date();
-  if (params.hasOwnProperty("_seconds")) {
-    const milliseconds = params._seconds * 1000 + params._nanoseconds / 1000000;
+interface FirebaseTimestamp {
+  _seconds: number;
+  _nanoseconds?: number;
+}
+
+type Quality = |'standard' | 'high' | 'ultra'
+
+const firebaseTimeStamptoDate = (params: FirebaseTimestamp | unknown) => {
+  if (!params) return new Date();
+  if (typeof params === 'object' && params !== null && '_seconds' in params) {
+    const milliseconds = (params as FirebaseTimestamp)._seconds * 1000 + ((params as FirebaseTimestamp)._nanoseconds || 0) / 1000000;
     return new Date(milliseconds);
   }
   return new Date();
@@ -234,7 +241,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, is
                       name="quality"
                       value={value}
                       checked={options.quality === value}
-                      onChange={(e) => setOptions(prev => ({ ...prev, quality: e.target.value as any }))}
+                      onChange={(e) => setOptions(prev => ({ ...prev, quality: e.target.value as Quality }))}
                       className="mr-3"
                     />
                     <div>
@@ -383,7 +390,7 @@ interface ShareModalProps {
   onClose: () => void;
   onShare: (options: ShareOptions) => void;
   isLoading: boolean;
-  letter: any;
+  letter: Letter;
 }
 
 const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, onShare, isLoading, letter }) => {
@@ -535,7 +542,7 @@ interface DeleteConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  letter: any;
+  letter: Letter;
   isLoading: boolean;
 }
 
@@ -830,8 +837,7 @@ const LetterViewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   // Stores
-  // @ts-ignore
-  const { user } = useAuthStore();
+  // const { user } = useAuthStore();
   const { subscription } = useSubscriptionStore();
   const toast = useToast();
   const {
@@ -866,10 +872,10 @@ const LetterViewPage: React.FC = () => {
 
   const [metadata, setMetadata] = useState<LetterMetadata | null>(null);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
-  // @ts-ignore
-  const [versionHistory, setVersionHistory] = useState<VersionHistory[]>([]);
-  // @ts-ignore
-  const [stats, setStats] = useState<LetterStats | null>(null);
+
+  const [versionHistory] = useState<VersionHistory[]>([]);
+
+  const [stats] = useState<LetterStats | null>(null);
 
   // Memoized calculations
   const computedMetadata = useMemo(() => {
@@ -921,16 +927,14 @@ const LetterViewPage: React.FC = () => {
   }, [letter, computedMetadata]);
 
   // Debounced save pour les changements automatiques
-  const debouncedSave = useCallback(
-    debounce(async (updatedData: any) => {
+  const debouncedSave = 
+    debounce(async (updatedData: Partial<Letter>) => {
       try {
         await updateLetter(letter?.id || '', updatedData);
       } catch (error) {
         console.error('Auto-save error:', error);
       }
-    }, 2000),
-    [letter?.id, updateLetter]
-  );
+    }, 2000);
 
   // Event handlers optimisés
   const updateUIState = useCallback(<K extends keyof UIState>(
@@ -957,7 +961,7 @@ const LetterViewPage: React.FC = () => {
       });
 
       navigate('/dashboard/letters');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting letter:', error);
       toast.error('Erreur', 'Impossible de supprimer la lettre');
     }
@@ -989,9 +993,9 @@ const LetterViewPage: React.FC = () => {
       });
 
       updateUIState('showExportModal', false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Export error:', error);
-      toast.error('Erreur d\'export', error.message || 'Impossible d\'exporter la lettre');
+      toast.error('Erreur d\'export');
     } finally {
       updateUIState('isExporting', false);
     }
@@ -1006,44 +1010,51 @@ const LetterViewPage: React.FC = () => {
       const shareData = await letterService.createShareLink(letter.id, options);
 
       switch (options.platform) {
-        case 'copy':
+        case 'copy':{
           await navigator.clipboard.writeText(shareData.url);
           toast.success('Lien copié', 'Le lien de partage a été copié dans le presse-papier');
           break;
+        }
 
-        case 'email':
+        case 'email':{
           const emailSubject = `Lettre de motivation - ${letter.title}`;
           const emailBody = `${options.message || 'Voici ma lettre de motivation'}\n\n${shareData.url}`;
           window.location.href = `mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
           break;
+        }
 
-        case 'linkedin':
+        case 'linkedin':{
           const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareData.url)}`;
           window.open(linkedinUrl, '_blank');
           break;
+        }
 
-        case 'twitter':
+        case 'twitter':{
           const twitterText = `${options.message || 'Découvrez ma lettre de motivation'} ${shareData.url}`;
           const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}`;
           window.open(twitterUrl, '_blank');
           break;
+        }
 
-        case 'facebook':
+        case 'facebook':{
           const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareData.url)}`;
           window.open(facebookUrl, '_blank');
           break;
+        }
 
-        case 'whatsapp':
+        case 'whatsapp':{
           const whatsappText = `${options.message || 'Voici ma lettre de motivation'} ${shareData.url}`;
           const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
           window.open(whatsappUrl, '_blank');
           break;
+        }
 
-        case 'telegram':
+        case 'telegram':{
           const telegramText = `${options.message || 'Voici ma lettre de motivation'} ${shareData.url}`;
           const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(shareData.url)}&text=${encodeURIComponent(telegramText)}`;
           window.open(telegramUrl, '_blank');
           break;
+        }
       }
 
       analytics.track({
@@ -1053,15 +1064,16 @@ const LetterViewPage: React.FC = () => {
       });
 
       updateUIState('showShareModal', false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Share error:', error);
-      toast.error('Erreur de partage', error.message || 'Impossible de partager la lettre');
+      const errorMessage = error instanceof Error ? error.message : 'Impossible de partager la lettre';
+      toast.error('Erreur de partage', errorMessage);
     } finally {
       updateUIState('isSharing', false);
     }
   }, [letter, toast, updateUIState]);
 
-  const handleAnalyze = useCallback(async () => {
+  const handleAnalyze = async () => {
     if (!letter?.id || !canAnalyze) return;
 
     updateUIState('isAnalyzing', true);
@@ -1079,13 +1091,13 @@ const LetterViewPage: React.FC = () => {
       });
 
       updateUIState('showAnalysis', true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Analysis error:', error);
-      toast.error('Erreur d\'analyse', error.message || 'Impossible d\'analyser la lettre');
+      toast.error('Erreur d\'analyse');
     } finally {
       updateUIState('isAnalyzing', false);
     }
-  }, [letter, canAnalyze, toast, updateUIState]);
+  };
 
   const handleBookmark = useCallback(async () => {
     if (!letter?.id) return;
@@ -1104,9 +1116,10 @@ const LetterViewPage: React.FC = () => {
         category: 'engagement',
         label: letter.id
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Bookmark error:', error);
-      toast.error('Erreur', 'Impossible de modifier le signet');
+      const errorMessage = error instanceof Error ? error.message : 'Impossible de modifier le signet';
+      toast.error('Erreur d\'analyse', errorMessage);
     }
   }, [letter, uiState.isBookmarked, toast, updateUIState]);
 
@@ -1168,9 +1181,10 @@ const LetterViewPage: React.FC = () => {
       });
 
       navigate(`/dashboard/letters/${clonedLetter.id}/edit`);
-    } catch (error: any) {
+    }catch (error: unknown) {
       console.error('Clone error:', error);
-      toast.error('Erreur', 'Impossible de dupliquer la lettre');
+      const errorMessage = error instanceof Error ? error.message : 'Impossible de dupliquer la lettre';
+      toast.error('Erreur', errorMessage);
     }
   }, [letter, toast, navigate]);
 
@@ -1497,7 +1511,7 @@ const LetterViewPage: React.FC = () => {
                   ].map(({ id, label, icon: Icon, premium }) => (
                     <button
                       key={id}
-                      onClick={() => updateUIState('activeTab', id as any)}
+                      onClick={() => updateUIState('activeTab', id as UIState['activeTab'])}
                       className={`relative py-4 px-1 border-b-2 font-medium text-sm transition-colors ${uiState.activeTab === id
                           ? 'border-blue-500 text-blue-600'
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -1661,7 +1675,7 @@ const LetterViewPage: React.FC = () => {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {versionHistory.map((version, _index) => (
+                        {versionHistory.map((version) => (
                           <div key={version.id} className="border border-gray-200 rounded-lg p-4">
                             <div className="flex items-center justify-between mb-2">
                               <h4 className="font-semibold text-gray-800">Version {version.version}</h4>
