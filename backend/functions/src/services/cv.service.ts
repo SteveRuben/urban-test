@@ -2,7 +2,7 @@ import { logger } from 'firebase-functions';
 import PDFDocument from 'pdfkit';
 import { Document, Paragraph, Packer } from 'docx';
 import { COLLECTIONS, db } from '../config/firebase';
-import { CV, CVAnalysis, CVExport, CVRegion, JobMatching } from '../models/cv.model';
+import { CV, CVAnalysis, CVRegion, JobMatching } from '../models/cv.model';
 import { ForbiddenError, NotFoundError, ValidationError } from '../utils/errors.util';
 import { ValidationUtil } from '../utils/validation.util';
 import { SubscriptionService } from './subscription.service';
@@ -358,68 +358,57 @@ export class CVService {
   /**
    * Exporter un CV
    */
-  static async exportCV(cv: CV, format: string): Promise<CVExport> {
+  static async exportCV(cv: CV, format: string): Promise<any> {
     try {
-      const exportId = db.collection(COLLECTIONS.CV_EXPORTS).doc().id;
-      let fileBuffer: Buffer;
-      let fileName: string;
+        let fileBuffer: Buffer;
+        let fileName: string;
+        let contentType: string;
 
-      // Générer le fichier selon le format
-      switch (format.toLowerCase()) {
-        case 'pdf':
-          fileBuffer = await this.generateCVPDF(cv);
-          fileName = `${cv.title}.pdf`;
-          break;
-        case 'docx':
-          fileBuffer = await this.generateCVDOCX(cv);
-          fileName = `${cv.title}.docx`;
-          break;
-        case 'html':
-          fileBuffer = await this.generateCVHTML(cv);
-          fileName = `${cv.title}.html`;
-          break;
-        case 'json':
-          fileBuffer = Buffer.from(JSON.stringify(cv, null, 2));
-          fileName = `${cv.title}.json`;
-          break;
-        default:
-          throw new ValidationError('Format d\'export non supporté');
-      }
-
-      // Ici, vous devriez uploader le fichier vers votre stockage (Firebase Storage, AWS S3, etc.)
-      // Pour l'exemple, on simule une URL de téléchargement
-      const downloadUrl = `https://storage.example.com/exports/${exportId}/${fileName}`;
-
-      const cvExport: CVExport = {
-        id: exportId,
-        cvId: cv.id,
-        format: format as any,
-        fileName,
-        fileSize: fileBuffer.length,
-        downloadUrl,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 jours
-        downloadCount: 0,
-        createdAt: new Date()
-      };
-
-      // Sauvegarder l'export en base
-      await db.collection(COLLECTIONS.CV_EXPORTS).doc(exportId).set(cvExport);
-
-      // Ajouter l'export au CV
-      const updatedExports = [...cv.exports, cvExport];
-      await this.collection.doc(cv.id).update({
-        exports: updatedExports,
-        updatedAt: new Date()
-      });
+        // Générer le fichier selon le format
+        switch (format.toString().toLowerCase()) {
+            case 'pdf':
+                fileBuffer = await CVService.generateCVPDF(cv);
+                fileName = `${cv.title.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_')}.pdf`;
+                contentType = 'application/pdf';
+                break;
+                
+            case 'docx':
+                fileBuffer = await CVService.generateCVDOCX(cv);
+                fileName = `${cv.title.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_')}.docx`;
+                contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                break;
+                
+            case 'html':
+                fileBuffer = await CVService.generateCVHTML(cv);
+                fileName = `${cv.title.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_')}.html`;
+                contentType = 'text/html';
+                break;
+                
+            case 'json':
+                // Export des données du CV en JSON
+                const cvData = {
+                    ...cv,
+                    exportedAt: new Date().toISOString(),
+                    exportFormat: 'json'
+                };
+                fileBuffer = Buffer.from(JSON.stringify(cvData, null, 2), 'utf8');
+                fileName = `${cv.title.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_')}.json`;
+                contentType = 'application/json';
+                break;
+                
+            default:
+              throw new ValidationError('Format d\'export non supporté');
+        }
 
       logger.info('CV exporté avec succès', {
-        exportId,
-        cvId: cv.id,
+        // cvId,
+        // userId,
         format,
-        fileSize: fileBuffer.length
-      });
+        fileSize: fileBuffer.length,
+        fileName
+    });
 
-      return cvExport;
+      return {contentType,fileBuffer,fileName};
     } catch (error) {
       logger.error('Erreur lors de l\'export du CV:', error);
       throw error;
@@ -766,16 +755,26 @@ export class CVService {
         });
 
         // Pied de page avec informations générées
-        const pageCount = doc.bufferedPageRange().count;
-        for (let i = 0; i < pageCount; i++) {
-          doc.switchToPage(i);
-          doc.fontSize(8).fillColor('gray').text(
-            `CV généré avec MotivationLetter AI - Page ${i + 1}/${pageCount}`,
-            50,
-            doc.page.height - 30,
-            { align: 'center' }
-          );
-        }
+        try {
+          const range = doc.bufferedPageRange();
+          const pageCount = range.count;
+          
+          // Important : utiliser les vrais indices de pages
+          for (let i = 0; i < pageCount; i++) {
+              const actualPageIndex = range.start + i;
+              doc.switchToPage(actualPageIndex);
+              doc.fontSize(8).fillColor('gray').text(
+                  `CV généré avec MotivationLetter AI - Page ${i + 1}/${pageCount}`, 
+                  50, 
+                  doc.page.height - 30, 
+                  { align: 'center' }
+              );
+          }
+      } catch (paginationError) {
+          console.warn('Erreur pagination PDF, ignorée:', paginationError);
+          // On ignore l'erreur de pagination pour ne pas faire planter l'export
+      }
+      
 
         doc.end();
       } catch (error) {
