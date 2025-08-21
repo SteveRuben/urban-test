@@ -334,8 +334,18 @@ export class CVController {
       }
 
       const exportResult = await CVService.exportCV(cv, format as string);
+        res.setHeader('Content-Type', exportResult.contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="${exportResult.fileName}"`);
+        res.setHeader('Content-Length', exportResult.fileBuffer.length);
+        
+        // Headers pour éviter la mise en cache
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
 
-      ResponseUtil.success(res, exportResult,  'CV exporté avec succès');
+        // ✅ Envoyer le fichier directement
+        res.send(exportResult.fileBuffer);
+        ResponseUtil.success(res, exportResult,  'CV exporté avec succès');
 
     } catch (error) {
       res.status(500).json({

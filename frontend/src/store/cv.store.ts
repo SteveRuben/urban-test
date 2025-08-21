@@ -105,7 +105,7 @@ interface CVState {
   loadTemplates: (filters?: TemplateFilters) => Promise<void>;
   
   // Actions export
-  exportCV: (cvId: string, format: string) => Promise<string>;
+  exportCV: (cvId: string, format: string) => Promise<void>;
   
   // Actions utilitaires
   setCurrentCV: (cv: CV | null) => void;
@@ -467,9 +467,13 @@ export const useCVStore = create<CVState>()(
       exportCV: async (cvId: string, format: string) => {
         set({ isLoading: true, error: null });
         try {
-          const exportResult = await CVService.exportCV(cvId, format);
+          // ✅ Appel direct sans retour de downloadUrl
+          await CVService.exportCV(cvId, format);
+          
           set({ isLoading: false });
-          return exportResult.downloadUrl;
+          
+          // ✅ Pas de retour nécessaire, le téléchargement est automatique
+          
         } catch (error: unknown) {
           const errorMessage = getErrorMessage(error, 'Erreur lors de l\'exportation du CV');
           set({

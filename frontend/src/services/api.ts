@@ -96,11 +96,11 @@ export default api; */
 import axios from 'axios';
 import { auth } from '../config/firebase';
 
-//|| 'http://127.0.0.1:5001/motivationletter-ai/us-central1/api/v1'
+//|| 'http://127.0.0.1:5001/motivationletter-ai/us-central1/api/v1'|| 'https://api-ybcarzkuva-uc.a.run.app/v1'
 console.log('API URL:', import.meta.env.VITE_API_URL);
 // Configuration de base d'axios
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://api-ybcarzkuva-uc.a.run.app/v1' ,
+  baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:5001/motivationletter-ai/us-central1/api/v1',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

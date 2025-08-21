@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FaFileAlt,
@@ -107,14 +107,16 @@ const DashboardPage: React.FC = () => {
   }, [dashboardData]);
 
   // Recherche optimisée avec debounce
-  const debouncedSearch = 
-    debounce((term: string) => {
+  const debouncedSearch = useMemo(
+    () => debounce((term: string) => {
       analytics.track({
         action: 'dashboard_search',
         category: 'engagement',
         label: term
       });
-    }, 500);
+    }, 500),
+    []
+  );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value;

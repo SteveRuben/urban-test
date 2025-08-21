@@ -36,6 +36,7 @@ const CVsPage: React.FC = () => {
 
   // const [selectedCVs, setSelectedCVs] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
+  const [exportingCVs, setExportingCVs] = useState<Set<string>>(new Set()); // ✅ Track des exports en cours
 
   useEffect(() => {
     loadUserCVs();
@@ -70,13 +71,21 @@ const CVsPage: React.FC = () => {
   };
 
   const handleExportCV = async (cvId: string, format: string) => {
+    setExportingCVs(prev => new Set(prev).add(`${cvId}-${format}`));
+    
     try {
-      const downloadUrl = await exportCV(cvId, format);
-      window.open(downloadUrl, '_blank');
-      addToast('Export généré avec succès', 'success');
-    } catch (error) {
-      console.log('Erreur lors de l\'export',error)
-      addToast('Erreur lors de l\'export', 'error');
+      await exportCV(cvId, format);
+      addToast(`CV téléchargé en ${format.toUpperCase()}`, 'success');
+    } catch (error: any) {
+      console.log('Erreur lors de l\'export', error);
+      addToast(error.message || 'Erreur lors de l\'export', 'error');
+    } finally {
+      // Retirer de la liste des exports en cours
+      setExportingCVs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`${cvId}-${format}`);
+        return newSet;
+      });
     }
   };
 

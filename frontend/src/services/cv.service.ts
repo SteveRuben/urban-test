@@ -10,7 +10,6 @@ import type {
   JobMatchingRequest,
   CVOptimizationRequest,
   CVRegionAdaptationRequest,
-  CVExport,
   // CVExportRequest,
   CVTemplate
 } from '../types/cv.types';
@@ -181,12 +180,71 @@ export class CVService {
   /**
    * Exporter un CV
    */
-  static async exportCV(cvId: string, format: string = 'pdf'): Promise<CVExport> {
+  static async exportCV(cvId: string, format: string = 'pdf'): Promise<void> {
     const response = await api.get(`${this.BASE_URL}/${cvId}/export`, {
-      params: { format }
+      params: { format },
+        responseType: 'blob', // ✅ Crucial pour recevoir le fichier
+        timeout: 60000
     });
-    return response.data.data;
-  }
+    const contentDisposition = response.headers['content-disposition'];
+      let filename = `cv.${format}`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+
+      // ✅ Créer le blob et déclencher le téléchargement
+      const blob = new Blob([response.data], { 
+        type: response.headers['content-type'] 
+      });
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      
+      // Ajouter au DOM, cliquer, puis supprimer
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Nettoyer l'URL
+      window.URL.revokeObjectURL(url);
+      
+      console.log(`✅ CV téléchargé: ${filename}`);
+      
+    } catch (error: any) {
+      console.error('Erreur export CV:', error);
+      
+      // ✅ Gestion d'erreur améliorée
+      let errorMessage = 'Erreur lors de l\'export du CV';
+      
+      if (error.response) {
+        // Si c'est une erreur du serveur avec response
+        if (error.response.status === 404) {
+          errorMessage = 'CV non trouvé';
+        } else if (error.response.status === 403) {
+          errorMessage = 'Accès non autorisé à ce CV';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Erreur serveur lors de la génération';
+        } else if (error.response.data && typeof error.response.data === 'string') {
+          // Si le serveur renvoie du texte d'erreur
+          errorMessage = error.response.data;
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Délai d\'attente dépassé. Le fichier est peut-être trop volumineux.';
+      } else if (!error.response) {
+        errorMessage = 'Erreur de connexion. Vérifiez votre connexion internet.';
+      }
+      
+      throw new Error(errorMessage);
+    }
+  
 
   /**
    * Obtenir les templates CV

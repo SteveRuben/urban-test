@@ -12,7 +12,7 @@ function getErrorMessage(error: unknown, defaultMessage: string = 'Une erreur es
   return defaultMessage;
 }
 // src/utils/performance.ts
-export const debounce = <T extends (...args: unknown[]) => void>(
+export const debounce = <T extends (...args: string[]) => void>(
   func: T,
   delay: number
 ): ((...args: Parameters<T>) => void) => {
@@ -24,7 +24,7 @@ export const debounce = <T extends (...args: unknown[]) => void>(
   };
 };
 
-export const throttle = <T extends (...args: unknown[]) => void>(
+export const throttle = <T extends (...args: string[]) => void>(
   func: T,
   limit: number
 ): ((...args: Parameters<T>) => void) => {
